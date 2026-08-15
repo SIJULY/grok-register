@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 class TurnstileService:
     def __init__(self):
-        # 读取 2Captcha 的密钥环境变量
-        self.twocaptcha_key = os.getenv('TWOCAPTCHA_KEY', '').strip()
+        # 读取 2Captcha 的密钥环境变量 (兼容 YESCAPTCHA_KEY 和 TWOCAPTCHA_KEY)
+        self.twocaptcha_key = os.getenv('YESCAPTCHA_KEY', '').strip() or os.getenv('TWOCAPTCHA_KEY', '').strip()
         # 2Captcha 的现代 JSON API 接口
         self.api_base = "https://api.2captcha.com"
         self.timeout = float(os.getenv("TWOCAPTCHA_TIMEOUT", "20"))
@@ -31,7 +31,7 @@ class TurnstileService:
         :return: 成功返回 taskId
         """
         if not self.twocaptcha_key:
-            raise ValueError("缺少 TWOCAPTCHA_KEY，无法创建任务")
+            raise ValueError("缺少 YESCAPTCHA_KEY 或 TWOCAPTCHA_KEY，无法创建任务")
 
         url = f"{self.api_base}/createTask"
         payload = {
@@ -62,7 +62,7 @@ class TurnstileService:
         :return: 成功返回 token，失败或超时返回 None
         """
         if not self.twocaptcha_key:
-            raise ValueError("缺少 TWOCAPTCHA_KEY，无法获取结果")
+            raise ValueError("缺少 YESCAPTCHA_KEY 或 TWOCAPTCHA_KEY，无法获取结果")
 
         # Turnstile 验证码通常需要几秒钟时间解决，初始等待可以减少无效请求
         time.sleep(initial_delay)
