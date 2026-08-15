@@ -20,7 +20,9 @@ ENV_PATH = BASE_DIR / ".env"
 app = FastAPI(title="Grok-Register WebUI")
 
 # 设置静态文件和模板
-app.mount("/static", StaticFiles(directory=BASE_DIR / "web" / "static"), name="static")
+static_dir = BASE_DIR / "web" / "static"
+static_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "web" / "templates")
 
 def get_env_config():

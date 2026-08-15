@@ -13,41 +13,27 @@ Grok-Register 是一个自动化工具，旨在管理和监控与特定服务交
 针对 Ubuntu/Debian 或 CentOS 系统的 VPS 环境，我们提供了一键安装脚本：
 
 ```bash
-# 下载一键安装脚本
-curl -O https://raw.githubusercontent.com/SIJULY/grok-register/main/install.sh
-
-# 赋予执行权限
-chmod +x install.sh
-
-# 执行安装
-./install.sh
+bash <(curl -s https://raw.githubusercontent.com/SIJULY/grok-register/main/install.sh)
 ```
 
-> **注意：** 建议使用 `root` 用户运行以确保能够正常安装依赖的系统环境。
+> **说明：** 
+> 1. 建议使用 `root` 用户运行。
+> 2. 脚本支持交互式菜单，可选择：**全新安装**、**更新代码和依赖**、**完全卸载**。
+> 3. 安装或更新完成后，脚本将**自动以后台模式启动程序**。
 
 安装成功后，请根据提示，在项目目录下的 `.env` 文件中配置你的相关密钥。
 
-### 启动项目
+启动后，默认将在服务器的 `5001` 端口运行。你可以在浏览器中访问 `http://<服务器IP>:5001`。
 
-你可以选择前台运行或后台运行：
-
-**方式一：前台运行（适合测试，关闭 SSH 终端后会退出）**
+如果你需要手动控制后台运行的程序，可以使用以下命令：
 ```bash
-cd grok-register
-source .venv/bin/activate
-python webui.py
-```
+cd /opt/grok-register
 
-**方式二：后台运行（推荐，关闭 SSH 终端后程序继续运行）**
-```bash
-cd grok-register
+# 启动服务
 source .venv/bin/activate
 nohup python webui.py > run.log 2>&1 &
-```
 
-启动后，默认将在服务器的 `5001` 端口运行。你可以在浏览器中访问 `http://<服务器IP>:5001`。
-如果你需要停止后台运行的程序，可以使用以下命令：
-```bash
+# 停止服务
 pkill -f "python webui.py"
 ```
 
