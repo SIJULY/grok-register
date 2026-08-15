@@ -12,7 +12,7 @@ for line in reversed(lines):
         break
 
 sess = cf_req.Session()
-sess.proxies = {"http": "http://127.0.0.1:7897", "https": "http://127.0.0.1:7897"}
+sess.proxies=None
 sess.cookies.set("sso", sso, domain=".x.ai")
 
 code_verifier = secrets.token_urlsafe(64)[:128]
@@ -62,7 +62,7 @@ print(f"Action: {action[:80]}", flush=True)
 print(f"Fields: {list(hidden.keys())}", flush=True)
 
 s = std_req.Session()
-s.proxies = {"http": "http://127.0.0.1:7897", "https": "http://127.0.0.1:7897"}
+s.proxies=None
 s.cookies.set("sso", sso, domain=".x.ai")
 
 form_data = dict(hidden)

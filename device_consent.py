@@ -11,7 +11,7 @@ except Exception:
     pass
 
 CLIENT_ID = 'b1a00492-073a-47ea-816f-4c329264a828'
-PROXY = os.getenv('GROK_PROXY') or os.getenv('CLIPROXY') or 'http://127.0.0.1:7897'
+PROXY = os.getenv('GROK_PROXY') or os.getenv('CLIPROXY') or ""
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT = os.path.abspath(os.path.expanduser(
     os.getenv('GROK_AUTH_DIR') or os.path.join(SCRIPT_DIR, 'auths')
@@ -35,7 +35,7 @@ for line in lines:
     print(f'[{email}]')
 
     # Get device code
-    sess = cf_req.Session(impersonate='chrome120', proxies={'http': PROXY, 'https': PROXY})
+    sess = cf_req.Session(impersonate='chrome120', proxies={"http": PROXY, "https": PROXY} if PROXY else None)
     sess.cookies.set('sso', sso, domain='.x.ai', path='/')
     r = sess.post('https://auth.x.ai/oauth2/device/code', data={
         'client_id': CLIENT_ID,

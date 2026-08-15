@@ -19,7 +19,7 @@ REDIRECT_URI = "http://127.0.0.1:56121/callback"
 TOKEN_ENDPOINT = "https://auth.x.ai/oauth2/token"
 AUTHORIZE_URL = "https://auth.x.ai/oauth2/authorize"
 SCOPE = "openid profile email offline_access grok-cli:access api:access"
-PROXY = os.getenv("GROK_PROXY") or "http://127.0.0.1:7897"
+PROXY = os.getenv("GROK_PROXY") or ""
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 AUTH_DIR = os.path.abspath(os.path.expanduser(
     os.getenv("GROK_AUTH_DIR") or os.path.join(SCRIPT_DIR, "auths")
@@ -71,7 +71,7 @@ def sso_to_cpa(sso_token, email=""):
     ).rstrip(b"=").decode()
 
     sess = cf_req.Session()
-    sess.proxies = {"http": PROXY, "https": PROXY}
+    sess.proxies={"http": PROXY, "https": PROXY} if PROXY else None
     sess.cookies.set("sso", sso_token, domain=".x.ai")
 
     params = {

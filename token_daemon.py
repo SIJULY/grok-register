@@ -34,7 +34,7 @@ AUTH_DIR = os.path.abspath(os.path.expanduser(
     os.getenv("GROK_AUTH_DIR") or os.path.join(SCRIPT_DIR, "auths")
 ))
 CLIENT_ID = "b1a00492-073a-47ea-816f-4c329264a828"
-PROXY = os.getenv("GROK_PROXY") or "http://127.0.0.1:7897"
+PROXY = os.getenv("GROK_PROXY") or ""
 TOKEN_ENDPOINT = "https://auth.x.ai/oauth2/token"
 REDIRECT_URI = "http://127.0.0.1:56121/callback"
 
@@ -42,7 +42,7 @@ REDIRECT_URI = "http://127.0.0.1:56121/callback"
 def get_session():
     s = requests.Session()
     if PROXY:
-        s.proxies = {"http": PROXY, "https": PROXY}
+        s.proxies={"http": PROXY, "https": PROXY} if PROXY else None
     return s
 
 

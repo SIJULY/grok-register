@@ -11,7 +11,7 @@
 import sys, os, time, json, asyncio, argparse
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
-PROXY = os.getenv("GROK_PROXY") or "http://127.0.0.1:7897"
+PROXY = os.getenv("GROK_PROXY") or ""
 
 
 async def solve_turnstile(site_url: str, site_key: str,

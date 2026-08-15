@@ -36,7 +36,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 AUTH_DIR = os.path.abspath(os.path.expanduser(
     os.getenv("GROK_AUTH_DIR") or os.path.join(SCRIPT_DIR, "auths")
 ))
-PROXY = os.getenv("GROK_PROXY") or "http://127.0.0.1:7897"
+PROXY = os.getenv("GROK_PROXY") or ""
 GROK2API_BASE = os.getenv("GROK2API_BASE") or "http://127.0.0.1:8000"
 GROK2API_USER = os.getenv("GROK2API_USER") or "admin"
 GROK2API_PASS = os.getenv("GROK2API_PASS") or ""
@@ -83,7 +83,7 @@ PROBE_TIMEOUT = 15
 
 def probe_ip(ip=None):
     """通过 Clash 代理探测 accounts.x.ai（grok.py 的真正目标）。"""
-    proxies = {"http": PROXY, "https": PROXY} if HAS_CLASH else None
+    proxies={"http": PROXY, "https": PROXY} if PROXY else None if HAS_CLASH else None
     for url in PROBE_URLS:
         try:
             resp = _requests.get(url, headers={"User-Agent": "Mozilla/5.0"},

@@ -22,7 +22,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SITE_URL = "https://accounts.x.ai"
 FALLBACK_SITE_KEY = "0x4AAAAAAAhr9JGVDZbrZOo0"
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
-PROXY = os.getenv("GROK_PROXY") or "http://127.0.0.1:7897"
+PROXY = os.getenv("GROK_PROXY") or ""
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "keys")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -243,7 +243,7 @@ def browser_init():
     action_id = None
     js_sess = cf_req.Session(impersonate="chrome120")
     if PROXY:
-        js_sess.proxies = {"http": PROXY, "https": PROXY}
+        js_sess.proxies={"http": PROXY, "https": PROXY} if PROXY else None
     for js_path in js_urls:
         url = js_path if js_path.startswith("http") else f"{SITE_URL}{js_path}"
         try:
@@ -435,7 +435,7 @@ def register_one(cfg):
     # ── curl_cffi session ──
     sess = cf_req.Session(impersonate="chrome120")
     if PROXY:
-        sess.proxies = {"http": PROXY, "https": PROXY}
+        sess.proxies={"http": PROXY, "https": PROXY} if PROXY else None
     try:
         sess.get(SITE_URL, timeout=10)
     except Exception:
@@ -551,7 +551,7 @@ def register_one(cfg):
         try:
             rs = requests.Session()
             if PROXY:
-                rs.proxies = {"http": PROXY, "https": PROXY}
+                rs.proxies={"http": PROXY, "https": PROXY} if PROXY else None
             rs.get(sso_url, allow_redirects=True, timeout=15,
                    headers={"User-Agent": UA})
             sso = rs.cookies.get("sso")

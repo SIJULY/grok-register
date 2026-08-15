@@ -10,7 +10,7 @@ except Exception:
     pass
 
 CLIENT_ID = 'b1a00492-073a-47ea-816f-4c329264a828'
-PROXY = os.getenv('GROK_PROXY') or os.getenv('CLIPROXY') or 'http://127.0.0.1:7897'
+PROXY = os.getenv('GROK_PROXY') or os.getenv('CLIPROXY') or ""
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT = os.path.abspath(os.path.expanduser(
     os.getenv('GROK_AUTH_DIR') or os.path.join(SCRIPT_DIR, 'auths')
@@ -34,7 +34,7 @@ for c in codes:
     for i in range(48):  # 4 min max
         time.sleep(interval)
         try:
-            r = cf_req.Session(impersonate='chrome120', proxies={'http': PROXY, 'https': PROXY}).post(
+            r = cf_req.Session(impersonate='chrome120', proxies={"http": PROXY, "https": PROXY} if PROXY else None).post(
                 'https://auth.x.ai/oauth2/token',
                 data={
                     'grant_type': 'urn:ietf:params:oauth:grant-type:device_code',

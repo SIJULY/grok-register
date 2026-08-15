@@ -3,7 +3,7 @@ import requests, re, json
 from urllib.parse import urljoin
 
 s = requests.Session()
-s.proxies = {"http": "http://127.0.0.1:7897", "https": "http://127.0.0.1:7897"}
+s.proxies=None
 
 html = s.get("https://accounts.x.ai/sign-up", timeout=15).text
 print(f"HTML: {len(html)} bytes\n")

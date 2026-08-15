@@ -2,7 +2,7 @@ import requests, re
 from urllib.parse import urljoin
 
 s = requests.Session()
-s.proxies = {'http': 'http://127.0.0.1:7897', 'https': 'http://127.0.0.1:7897'}
+s.proxies=None
 
 start_url = 'https://accounts.x.ai/sign-up'
 print("GET sign-up page...")

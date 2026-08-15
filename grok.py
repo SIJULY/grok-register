@@ -92,7 +92,7 @@ def debug_mail_content(email: str, poll_idx: int, content: str):
 
 def _load_proxies():
     """从环境变量加载代理；设置为 none/direct/false/0 可关闭代理。"""
-    proxy = (os.getenv("GROK_PROXY") or os.getenv("CLIPROXY") or "http://127.0.0.1:7897").strip()
+    proxy = (os.getenv("GROK_PROXY") or os.getenv("CLIPROXY") or "").strip()
     if proxy.lower() in {"", "none", "direct", "false", "0", "no"}:
         return None
     if "://" not in proxy:

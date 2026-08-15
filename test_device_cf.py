@@ -12,7 +12,7 @@ from curl_cffi import requests as cf_req
 
 CLIENT_ID = "b1a00492-073a-47ea-816f-4c329264a828"
 SCOPE = "openid profile email offline_access grok-cli:access api:access"
-PROXY = os.getenv("GROK_PROXY") or "http://127.0.0.1:7897"
+PROXY = os.getenv("GROK_PROXY") or ""
 
 def _default_firefox_binary():
     if sys.platform == "darwin":
@@ -32,7 +32,7 @@ for line in lines:
 # Step 1: device_code
 print("=== Step 1: device_code ===", flush=True)
 sess = cf_req.Session()
-sess.proxies = {"http": PROXY, "https": PROXY}
+sess.proxies={"http": PROXY, "https": PROXY} if PROXY else None
 r = sess.post("https://auth.x.ai/oauth2/device/code", data={
     "client_id": CLIENT_ID, "scope": SCOPE
 }, timeout=15)
