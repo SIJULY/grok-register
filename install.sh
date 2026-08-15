@@ -62,7 +62,7 @@ elif command -v uv &> /dev/null; then
     uv pip install -r requirements.txt || pip install -r requirements.txt
 else
     # Fallback default
-    pip install fastapi uvicorn requests bs4 selenium loguru python-dotenv websockets
+    pip install fastapi "uvicorn[standard]" requests loguru python-dotenv websockets beautifulsoup4 curl_cffi patchright
 fi
 
 # 检查并配置 .env
@@ -72,9 +72,9 @@ if [ ! -f ".env" ]; then
     echo -e "${YELLOW}请在安装完成后，编辑 ${INSTALL_DIR}/.env 文件，填入你的 YESCAPTCHA_KEY 及邮箱 API 信息。${NC}"
 fi
 
-# 安装 Playwright 的浏览器二进制文件 (如果需要)
-echo -e "${GREEN}检查并安装 Playwright 依赖 (部分脚本可能需要)...${NC}"
-playwright install --with-deps chromium firefox 2>/dev/null || echo "跳过 playwright 安装"
+# 安装 patchright 的浏览器二进制文件 (如果需要)
+echo -e "${GREEN}检查并安装 patchright 依赖 (部分脚本可能需要)...${NC}"
+patchright install --with-deps chromium firefox 2>/dev/null || echo "跳过 patchright 安装"
 
 # 尝试启动测试
 echo "=========================================="

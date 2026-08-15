@@ -1,7 +1,9 @@
 fastapi==0.107.0
 uvicorn[standard]
 requests
-selenium
 loguru
 python-dotenv
 websockets
+beautifulsoup4
+curl_cffi
+patchright
