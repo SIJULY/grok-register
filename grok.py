@@ -79,10 +79,11 @@ def debug_mail_content(email: str, poll_idx: int, content: str):
         with open(path, "w", encoding="utf-8", errors="replace") as f:
             f.write(content or "")
         code, candidates, visible_text = extract_email_code(content)
-        log_step(email, f"拉信返回 len={len(content or '')}, debug={path}")
-        log_step(email, f"拉信可见文本预览: {visible_text[:500]!r}")
-        log_step(email, f"可见文本验证码候选: {candidates if candidates else '无'}")
-        log_step(email, f"提取函数选择: {code or '无'}")
+        # 简化日志输出，去除拉信和解析时的细节打印
+        # log_step(email, f"拉信返回 len={len(content or '')}, debug={path}")
+        # log_step(email, f"拉信可见文本预览: {visible_text[:500]!r}")
+        # log_step(email, f"可见文本验证码候选: {candidates if candidates else '无'}")
+        # log_step(email, f"提取函数选择: {code or '无'}")
         return code, candidates
     except Exception as e:
         print(f"[debug] {email} 保存/分析邮件失败: {e}", flush=True)
@@ -111,6 +112,7 @@ post_lock = threading.Lock()
 file_lock = threading.Lock()
 count_lock = threading.Lock()
 stop_event = threading.Event()
+soft_stop = False
 success_count = 0
 completed_count = 0
 attempted_count = 0
@@ -125,7 +127,7 @@ def sleep_interruptible(seconds: float) -> bool:
 
 def mark_attempt(email: str) -> bool:
     """记录一次邮箱尝试；达到 --max-attempts 时通知所有线程停止。"""
-    global attempted_count
+    global attempted_count, soft_stop
     with count_lock:
         attempted_count += 1
         current = attempted_count
@@ -133,7 +135,7 @@ def mark_attempt(email: str) -> bool:
     if limit > 0:
         print(f"[*] {email} 尝试进度: {current}/{limit}", flush=True)
         if current >= limit:
-            stop_event.set()
+            soft_stop = True
     return limit > 0 and current > limit
 
 def generate_random_name() -> str:
@@ -204,7 +206,12 @@ def register_single_thread(email_provider: str = "gptmail"):
         print("[-] 线程退出：缺少 Action ID")
         return
 
+    global soft_stop
     while not stop_event.is_set():
+        if soft_stop:
+            print(f"[*] 线程-{threading.get_ident()} 收到软停止信号，已安全退出。")
+            break
+            
         try:
             with requests.Session(impersonate="chrome120", proxies=PROXIES) as session:
                 # 预热连接
@@ -345,19 +352,17 @@ def register_single_thread(email_provider: str = "gptmail"):
                                 avg = (time.time() - start_time) / success_count
 
                             if target_count > 0 and completed_count >= target_count:
-                                stop_event.set()
+                                soft_stop = True
 
-                            print(f"[OK] 注册成功: {email} | SSO: {sso[:15]}... | 平均: {avg:.1f}s | 进度: {completed_count}/{target_count if target_count else '无限'}")
+                            print(f"[OK] 注册成功: {email} | SSO: {sso[:15]}... | 平均: {avg:.1f}s | 进度: {completed_count}/{target_count if target_count else '无限'}\n", flush=True)
                             
-                            print(f"[*] 暂停注册，开始将新账号 {email} 的 SSO 转换为 CLIPROYAPI auth...")
                             try:
                                 subprocess.run(
                                     [sys.executable, "convert_sso_to_cliproyapi.py", "--email", email, "--sso", sso, "--headless-auto"],
                                     check=True
                                 )
-                                print(f"[OK] {email} 无头转换成功完成，准备开始下一个账号的注册。")
                             except Exception as e:
-                                print(f"[-] {email} 无头转换失败: {e}")
+                                print(f"[-] {email} 无头转换及后续流程失败: {e}\n", flush=True)
                                 
                             break
                         elif '"error"' not in res.text or 'invalid' not in res.text.lower():
@@ -390,6 +395,26 @@ def main():
     global target_count, max_attempts
     target_count = args.count
     max_attempts = max(0, args.max_attempts)
+    
+    global soft_stop
+
+    # 后台监控 WebUI 发送的停止指令
+    def monitor_stop_flag():
+        global soft_stop
+        while not stop_event.is_set():
+            if os.path.exists(".stop_flag"):
+                if not soft_stop:
+                    print("\n[系统] 收到停止指令！当前账号完成注册、转换与上传等全部流程后，将安全退出...\n", flush=True)
+                    soft_stop = True
+                try:
+                    os.remove(".stop_flag")
+                except:
+                    pass
+            if soft_stop:
+                break
+            time.sleep(1)
+    
+    threading.Thread(target=monitor_stop_flag, daemon=True).start()
 
     print("=" * 60 + "\nGrok 注册机\n" + "=" * 60)
     print(f"[*] 当前邮箱提供商: {args.email_provider}")

@@ -214,9 +214,12 @@ def convert_one(email: str, sso: str, output_dir: str, force: bool = False, manu
 
     saved_path, record = save_cliproyapi_auth(email, token_data, output_dir)
     print(f"[{email}] OK：已保存 {saved_path}")
-    
-    upload_to_cpa(record)
-    
+
+    if upload_to_cpa(record):
+        record["cpa_uploaded"] = True
+        with open(saved_path, "w", encoding="utf-8") as f:
+            json.dump(record, f, ensure_ascii=False, indent=2)
+
     return True
 
 

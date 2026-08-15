@@ -72,7 +72,7 @@ async def _browser_authorize(vuc, sso_jwt, interactive=False, wait_seconds=110):
             await page.screenshot(path=png_path, full_page=True, timeout=5000)
         except Exception as e:
             png_path = f"保存失败: {type(e).__name__}: {str(e)[:80]}"
-        print(f"  [DEVICE] 已保存页面诊断: html={html_path} screenshot={png_path}", flush=True)
+        print(f"  [-] 已保存页面诊断: html={html_path} screenshot={png_path}", flush=True)
 
     async def _visible_buttons(page):
         try:
@@ -92,8 +92,8 @@ async def _browser_authorize(vuc, sso_jwt, interactive=False, wait_seconds=110):
     async def _click_by_text(page, patterns, log=True):
         buttons = await _visible_buttons(page)
         if log:
-            print(f"  [DEVICE] URL: {page.url}", flush=True)
-            print(f"  [DEVICE] Buttons: {[b.get('text') or b.get('value') for b in buttons]}", flush=True)
+            print(f"  [*] URL: {page.url}", flush=True)
+            print(f"  [*] Buttons: {[b.get('text') or b.get('value') for b in buttons]}", flush=True)
         for pattern in patterns:
             locators = [
                 page.get_by_role("button", name=pattern).first,
@@ -103,7 +103,7 @@ async def _browser_authorize(vuc, sso_jwt, interactive=False, wait_seconds=110):
             for loc in locators:
                 try:
                     if await loc.count() and await loc.is_visible(timeout=1000):
-                        print(f"  [DEVICE] 点击控件: {pattern}", flush=True)
+                        print(f"  [*] 点击控件: {pattern}", flush=True)
                         await loc.click(timeout=5000)
                         await page.wait_for_timeout(2500)
                         return True
@@ -124,7 +124,7 @@ async def _browser_authorize(vuc, sso_jwt, interactive=False, wait_seconds=110):
                 }
                 """, pattern)
                 if clicked:
-                    print(f"  [DEVICE] JS 点击控件: {pattern}", flush=True)
+                    print(f"  [*] JS 点击控件: {pattern}", flush=True)
                     await page.wait_for_timeout(2500)
                     return True
             except Exception:
@@ -136,7 +136,7 @@ async def _browser_authorize(vuc, sso_jwt, interactive=False, wait_seconds=110):
             try:
                 loc = page.get_by_text(text, exact=True).first
                 if await loc.count() and await loc.is_visible(timeout=1000):
-                    print(f"  [DEVICE] 点击验证控件: {text}", flush=True)
+                    print(f"  [*] 点击验证控件: {text}", flush=True)
                     await loc.click()
                     await page.wait_for_timeout(3000)
                     return True
@@ -171,25 +171,25 @@ async def _browser_authorize(vuc, sso_jwt, interactive=False, wait_seconds=110):
         page = await ctx.new_page()
         keep_browser_open = False
         try:
-            print(f"  [DEVICE] 打开授权页: {vuc}", flush=True)
+            print(f"  [*] 打开授权页: {vuc}", flush=True)
             try:
                 await page.goto(vuc, timeout=60000 if interactive else 45000, wait_until="commit")
             except Exception as e:
-                print(f"  [DEVICE] 页面加载超时/异常，继续尝试授权: {type(e).__name__}: {str(e)[:120]}", flush=True)
+                print(f"  [-] 页面加载超时/异常，继续尝试授权: {type(e).__name__}: {str(e)[:120]}", flush=True)
             if interactive:
                 keep_browser_open = True
-                print("  [DEVICE] 交互模式：浏览器已注入 SSO Cookie。请在弹出的浏览器里点击 Continue/Allow。", flush=True)
-                print("  [DEVICE] 如果仍跳到登录页，说明当前 SSO Cookie 已失效或未被 accounts.x.ai 接受。", flush=True)
+                print("  [*] 交互模式：浏览器已注入 SSO Cookie。请在弹出的浏览器里点击 Continue/Allow。", flush=True)
+                print("  [*] 如果仍跳到登录页，说明当前 SSO Cookie 已失效或未被 accounts.x.ai 接受。", flush=True)
                 deadline = time.time() + wait_seconds
                 while time.time() < deadline:
                     await page.wait_for_timeout(1500)
                     if "/device/done" in page.url:
-                        print("  [DEVICE] 授权页已完成", flush=True)
+                        print("  [OK] 授权页已完成", flush=True)
                         return True
                     if await _body_text_contains(page, "Invalid action"):
-                        print("  [DEVICE] 授权页返回 Invalid action", flush=True)
+                        print("  [-] 授权页返回 Invalid action", flush=True)
                         return False
-                print(f"  [DEVICE] 交互授权等待超时，最终 URL: {page.url}", flush=True)
+                print(f"  [-] 交互授权等待超时，最终 URL: {page.url}", flush=True)
                 return False
 
             deadline = time.time() + wait_seconds
@@ -200,10 +200,10 @@ async def _browser_authorize(vuc, sso_jwt, interactive=False, wait_seconds=110):
                 auto_round += 1
                 await page.wait_for_timeout(1500)
                 if "/device/done" in page.url:
-                    print("  [DEVICE] 授权页已完成", flush=True)
+                    print("  [OK] 授权页已完成", flush=True)
                     return True
                 if await _body_text_contains(page, "Invalid action"):
-                    print("  [DEVICE] 授权页返回 Invalid action，停止自动点击", flush=True)
+                    print("  [-] 授权页返回 Invalid action，停止自动点击", flush=True)
                     await _save_debug(page, "invalid_action")
                     return False
                 url = page.url
@@ -213,7 +213,7 @@ async def _browser_authorize(vuc, sso_jwt, interactive=False, wait_seconds=110):
                     stagnant_rounds += 1
                 else:
                     stagnant_rounds = 0
-                    print(f"  [DEVICE] 自动授权状态: round={auto_round}, url={url}, buttons={list(state[1])}", flush=True)
+                    print(f"  [*] 自动授权状态: round={auto_round}, url={url}, buttons={list(state[1])}", flush=True)
                 last_state = state
 
                 if await _click_exact_visible_text(page, ["Click to reveal"]):
@@ -247,14 +247,14 @@ async def _browser_authorize(vuc, sso_jwt, interactive=False, wait_seconds=110):
                 if stagnant_rounds in (4, 8):
                     await _save_debug(page, f"stagnant_round_{stagnant_rounds}")
                 if auto_round % 5 == 0:
-                    print(f"  [DEVICE] 自动授权等待中: round={auto_round}, url={page.url}", flush=True)
-            print(f"  [DEVICE] 授权页最终 URL: {page.url}", flush=True)
+                    print(f"  [*] 自动授权等待中: round={auto_round}, url={page.url}", flush=True)
+            print(f"  [-] 授权页最终 URL: {page.url}", flush=True)
             await _save_debug(page, "auto_authorize_timeout")
         except Exception as e:
-            print(f"  [DEVICE] 浏览器授权异常: {type(e).__name__}: {str(e)[:160]}", flush=True)
+            print(f"  [-] 浏览器授权异常: {type(e).__name__}: {str(e)[:160]}", flush=True)
         finally:
             if keep_browser_open:
-                print("  [DEVICE] 保持交互浏览器打开，等待本轮 token 轮询结束后再关闭。", flush=True)
+                print("  [*] 保持交互浏览器打开，等待本轮 token 轮询结束后再关闭。", flush=True)
                 # 不在这里关闭：避免用户刚点击 Continue/Allow 时页面被脚本关闭。
                 # 进程结束时浏览器会随 patchright 上下文退出。
             else:
@@ -269,27 +269,27 @@ def sso_to_device(sso_token, email="", manual=False, wait_seconds=None, interact
         s, p = _http_json("https://auth.x.ai/oauth2/device/code", "POST",
                           {"client_id": CLIENT_ID, "scope": SCOPE})
         if s != 200 or not isinstance(p, dict) or "device_code" not in p:
-            print(f"  [DEVICE] device/code 失败 HTTP {s}: {str(p)[:150]}")
+            print(f"  [-] device/code 失败 HTTP {s}: {str(p)[:150]}")
             return None
         dc = p["device_code"]
         vuc = p.get("verification_uri_complete")
-        print(f"  [DEVICE] User Code: {p.get('user_code', '')}", flush=True)
-        print(f"  [DEVICE] Verify URL: {vuc}", flush=True)
+        print(f"  [*] User Code: {p.get('user_code', '')}", flush=True)
+        print(f"  [*] Verify URL: {vuc}", flush=True)
         wait_seconds = int(wait_seconds or os.getenv("GROK_DEVICE_WAIT", "300" if (manual or interactive) else "90"))
         if manual:
-            print("  [DEVICE] 手动授权模式：请在浏览器打开上面的 Verify URL，登录/确认授权后保持本程序运行。", flush=True)
-            print("  [DEVICE] 本程序会自动轮询 token，无需在终端输入。", flush=True)
+            print("  [*] 手动授权模式：请在浏览器打开上面的 Verify URL，登录/确认授权后保持本程序运行。", flush=True)
+            print("  [*] 本程序会自动轮询 token，无需在终端输入。", flush=True)
         elif interactive:
             ok = asyncio.run(asyncio.wait_for(
                 _browser_authorize(vuc, sso_token, interactive=True, wait_seconds=wait_seconds),
                 timeout=wait_seconds + 20,
             ))
             if not ok:
-                print("  [DEVICE] 交互授权未确认, 继续轮询", flush=True)
+                print("  [-] 交互授权未确认, 继续轮询", flush=True)
         else:
             ok = asyncio.run(asyncio.wait_for(_browser_authorize(vuc, sso_token), timeout=110))
             if not ok:
-                print("  [DEVICE] 授权未确认, 继续轮询")
+                print("  [-] 授权未确认, 继续轮询")
         deadline = time.time() + wait_seconds
         interval = max(int(p.get("interval", 5)), 1)
         poll_no = 0
@@ -300,7 +300,7 @@ def sso_to_device(sso_token, email="", manual=False, wait_seconds=None, interact
                 "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
                 "device_code": dc, "client_id": CLIENT_ID})
             if s == 200 and isinstance(t, dict) and t.get("access_token"):
-                print(f"  [DEVICE] token 成功: poll={poll_no}", flush=True)
+                print(f"  [OK] token 成功: poll={poll_no}", flush=True)
                 return {
                     "access_token": t["access_token"],
                     "refresh_token": t.get("refresh_token", ""),
@@ -311,20 +311,20 @@ def sso_to_device(sso_token, email="", manual=False, wait_seconds=None, interact
             desc = t.get("error_description", "") if isinstance(t, dict) else str(t)[:120]
             if err == "authorization_pending":
                 remain = max(int(deadline - time.time()), 0)
-                print(f"  [DEVICE] poll={poll_no} authorization_pending，剩余等待 {remain}s", flush=True)
+                print(f"  [*] poll={poll_no} authorization_pending，剩余等待 {remain}s", flush=True)
                 continue
             if err in ("access_denied", "expired_token"):
-                print(f"  [DEVICE] token 失败: {err}: {desc[:160]}")
+                print(f"  [-] token 失败: {err}: {desc[:160]}")
                 return None
             if err == "slow_down":
                 interval += 5
-                print(f"  [DEVICE] poll={poll_no} slow_down，调整 interval={interval}s", flush=True)
+                print(f"  [*] poll={poll_no} slow_down，调整 interval={interval}s", flush=True)
                 continue
-            print(f"  [DEVICE] poll={poll_no} HTTP {s}: {str(t)[:220]}", flush=True)
-        print(f"  [DEVICE] 轮询超时：{wait_seconds}s 内未检测到授权完成")
+            print(f"  [-] poll={poll_no} HTTP {s}: {str(t)[:220]}", flush=True)
+        print(f"  [-] 轮询超时：{wait_seconds}s 内未检测到授权完成")
         return None
     except Exception as e:
-        print(f"  [DEVICE] 异常: {type(e).__name__}: {str(e)[:120]}")
+        print(f"  [-] 异常: {type(e).__name__}: {str(e)[:120]}")
         return None
 
 

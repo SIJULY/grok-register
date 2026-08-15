@@ -5,6 +5,12 @@
 keys/
 pending_codes.json
 .action_id.cache
+auths/
+debug_device/
+debug_mails/
+*.json
+*.html
+*.png
 
 # Logs
 *.log
@@ -16,6 +22,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+uv.lock
 
 # OS
 .DS_Store
@@ -24,3 +31,4 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+*.code-workspace

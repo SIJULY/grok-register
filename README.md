@@ -1,171 +1,81 @@
-# grok-register
+# Grok-Register
 
-Automated account registration toolkit for x.ai (Grok) with SSO token extraction, OAuth Device Flow minting, and auto-replenish daemon for API gateway integration.
+Grok-Register 是一个自动化工具，旨在管理和监控与特定服务交互的任务与日志。本项目提供了简单的配置支持、任务实时监控、以及完善的 WebUI 界面供用户操作。
 
-## Features
+## 核心特性
+- **自动注册**: 自动化设备注册与轮换。
+- **Web 可视化面板**: 支持可视化的后台管理配置和任务实时日志流式推送展示（WebSocket）。
+- **多种验证码与代理支持**: 支持 YesCaptcha 以及灵活的自定义代理 (clash) 配置。
+- **多邮箱提供商支持**: 支持 LuckMail, MailNest, GPTMail。
 
-- **Account registration** (`grok.py`) — curl_cffi-based engine, supports YesCaptcha for Turnstile solving
-- **SSO → CPA token minting** (`sso_to_cpa.py`) — OAuth Device Flow with corrected scope, converts SSO tokens to access/refresh tokens
-- **Auto-replenish daemon** (`auto_replenish.py`) — monitors account pool, registers new accounts on demand, pushes to API gateway
-- **Token refresh daemon** (`token_daemon.py`) — keeps tokens alive
-- **OAuth token re-minting** (`remint_oauth.py`) — re-mints revoked tokens via Device Flow when xAI invalidates refresh tokens
-- **Turnstile solver** (`turnstile_solver_local.py`) — local CAPTCHA solving service
-- **Email service** (`email_service.py`) — multi-provider support (LuckMail, MailNest)
-- **Clash proxy rotator** (`clash_rotator.py`) — proxy rotation for registration
+## 一键安装部署（推荐，适用于 Linux/VPS）
 
-## Prerequisites
-
-- Python 3.10+
-- [uv](https://docs.astral.sh/uv/) (recommended) or pip
-- [YesCaptcha](https://yescaptcha.com/) API key (for Turnstile solving)
-- Email provider account (LuckMail / MailNest)
-- A running [grok2api](https://github.com/chenyme/grok2api) instance (for auto-replenish integration)
-
-## Quick Start
+针对 Ubuntu/Debian 或 CentOS 系统的 VPS 环境，我们提供了一键安装脚本：
 
 ```bash
-# Clone
-git clone https://github.com/xinxinshuhao-create/grok-register.git
+# 下载一键安装脚本
+curl -O https://raw.githubusercontent.com/SIJULY/grok-register/main/install.sh
+
+# 赋予执行权限
+chmod +x install.sh
+
+# 执行安装
+./install.sh
+```
+
+> **注意：** 建议使用 `root` 用户运行以确保能够正常安装依赖的系统环境。
+
+安装成功后，请根据提示，在项目目录下的 `.env` 文件中配置你的相关密钥，然后使用以下命令启动项目：
+
+```bash
 cd grok-register
-
-# Install dependencies
-uv sync
-
-# Configure
-cp .env.example .env
-# Edit .env with your API keys
-
-# Create output directory
-mkdir -p keys
-
-# Run registration
-uv run python grok.py
+source .venv/bin/activate
+python webui.py
 ```
 
-## Configuration
+## 手动安装说明
 
-Copy `.env.example` to `.env` and fill in:
+如果你希望手动安装或在非 Linux 环境部署，请参考以下步骤：
 
-| Variable | Required | Description |
-|---|---|---|
-| `YESCAPTCHA_KEY` | Yes | YesCaptcha API key for Turnstile solving |
-| `EMAIL_PROVIDER` | No | Email provider: `luckmail` / `mailnest` / `gptmail` (default: `gptmail`) |
-| `LUCKMAIL_API_KEY` | If luckmail | LuckMail API key |
-| `LUCKMAIL_PROJECT_CODE` | No | LuckMail project code (default: `grok`) |
-| `LUCKMAIL_EMAIL_TYPE` | No | Email type (default: `ms_imap`) |
-| `LUCKMAIL_DOMAIN` | No | Email domain (default: `outlook.com`) |
-| `THREADS` | No | Concurrent registration threads (default: 1) |
-| `GROK2API_BASE` | No | API gateway URL for auto-replenish (default: `http://127.0.0.1:8000`) |
-| `GROK2API_USER` | No | API gateway admin user (default: `admin`) |
-| `GROK2API_PASS` | No | API gateway admin password |
-| `GROK_PROXY` | No | HTTP proxy for registration (default: `http://127.0.0.1:7897`) |
+1. **克隆项目**
+   ```bash
+   git clone https://github.com/SIJULY/grok-register.git
+   cd grok-register
+   ```
 
-## Usage
+2. **配置 Python 环境** (推荐使用 python 3.9+)
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
 
-### Register accounts
+3. **安装依赖**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-```bash
-# Basic
-uv run python grok.py
+4. **配置环境变量**
+   ```bash
+   cp .env.example .env
+   # 然后使用你熟悉的编辑器编辑 .env 文件，填写必填的 YESCAPTCHA_KEY, 邮箱 API KEY，及按需开启的代理配置。
+   ```
 
-# With luckmail provider and 8 threads
-uv run python grok.py --email-provider luckmail --threads 8
-```
+5. **启动项目**
+   ```bash
+   python webui.py
+   ```
+   默认将在本地监听 `http://127.0.0.1:5001`，可以通过浏览器访问。
 
-Output:
-- `keys/grok.txt` — SSO token list
-- `keys/accounts.txt` — `email:password:sso` format
+## 注意事项与配置说明
 
-### Mint CPA tokens from SSO
+- `.env` 文件不会被提交到远程仓库，它包含你的私密信息（如 YesCaptcha 密钥、邮箱提供商的 API 密钥）。不要向任何人泄露。
+- 当开启代理时，如果在控制台出现 `Could not resolve host` 等网络报错，请检查配置文件中指定的 `GROK_PROXY` 是否正确且代理软件在对应端口提供服务。
+- 自动化产生的用户配置文件 (`auths`)、调试页面信息 (`debug_device`) 与相关缓存将保留在项目目录下并在 `.gitignore` 规则中进行屏蔽。
 
-```bash
-uv run python sso_to_cpa.py --all
-```
+## 更新日志
 
-Converts SSO tokens to OAuth access/refresh tokens via Device Flow.
+详情可参考 [v1_changelog.md](v1_changelog.md) 和 [v2_changelog.md](v2_changelog.md)。
 
-### Run auto-replenish daemon
+## 许可协议
 
-```bash
-uv run python auto_replenish.py --daemon 600 --min 2
-```
-
-Monitors account pool every 600s, registers new accounts when pool drops below 2.
-
-### Run token refresh daemon
-
-```bash
-uv run python token_daemon.py
-```
-
-### Re-mint revoked OAuth tokens
-
-When xAI invalidates refresh tokens (happens on model releases or account policy changes), re-mint them:
-
-```bash
-uv run python remint_oauth.py
-```
-
-Re-runs Device Flow with existing SSO tokens to obtain fresh access/refresh tokens.
-
-### Start Turnstile solver
-
-```bash
-uv run python turnstile_solver_local.py
-```
-
-Local HTTP service for CAPTCHA solving.
-
-## Supported Models
-
-Registered accounts and minted tokens can be used with [grok2api](https://github.com/chenyme/grok2api) to access the following models.
-
-### Free (Basic-tier accounts, no payment required)
-
-These are the models you get immediately after registration — no SuperGrok subscription needed:
-
-| Model | Capability | How to get |
-|---|---|---|
-| `grok-chat-fast` | Chat (fast mode) | SSO token → Web pool |
-| `grok-imagine-image` | Image generation | SSO token → Web pool |
-| `grok-4.5` | Chat + reasoning + search, 1M output tokens | SSO → Device Flow (`sso_to_cpa.py`) → OAuth direct |
-| `grok-4.6` | Chat + reasoning + search, 500K context, long-running agents, `xhigh` reasoning | SSO → Device Flow (`sso_to_cpa.py`) → Build pool |
-
-> ✅ All four models above have been tested and confirmed working end-to-end.
->
-> **Note**: After Grok 4.6 release, xAI removed `grok-4.5` from the Build pool — it now works via OAuth direct connection. `grok-4.6` is the current Build pool model. Use `remint_oauth.py` to re-mint tokens if xAI revokes them.
-
-### Paid (requires SuperGrok / Heavy subscription)
-
-The following models are available in the codebase but require a paid account tier:
-
-| Model | Capability | Tier |
-|---|---|---|
-| `grok-chat-auto` | Chat (auto mode) | Super |
-| `grok-chat-expert` | Chat (expert mode) | Super |
-| `grok-chat-heavy` | Chat (heavy mode) | Heavy |
-| `grok-imagine-image-quality` | Image generation (HD) | Super |
-| `grok-imagine-image-edit` | Image editing | Super |
-| `grok-imagine-video` | Video generation | Super |
-
-Other Build/Console models available via Device Flow: `grok-4.3`, `grok-4.20-0309-reasoning`, `grok-4.20-0309-non-reasoning`, `grok-4.20-multi-agent-0309`, `grok-build-0.1` (code/composer, 256K output).
-
-## OAuth Device Flow
-
-The `sso_to_cpa.py` script implements OAuth 2.0 Device Flow with the corrected scope:
-
-```
-openid profile email offline_access grok-cli:access api:access
-```
-
-This was validated against the upstream OAuth endpoint and successfully mints access/refresh tokens.
-
-## Acknowledgments
-
-This project builds upon and references work from:
-- [AaronL725/grok-register](https://github.com/AaronL725/grok-register)
-- [kaibush/grok-register](https://github.com/kaibush/grok-register)
-
-## License
-
-MIT
+This project is licensed under the MIT License - see the LICENSE file for details.
