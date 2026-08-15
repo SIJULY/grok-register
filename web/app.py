@@ -87,7 +87,7 @@ async def index(request: Request):
     config = get_env_config()
     auto_upload_cpa = str(config.get("GROK_AUTO_UPLOAD_CPA", "1")).lower()
         
-    return templates.TemplateResponse(request, "index.html", {
+    return templates.TemplateResponse("index.html", {
         "request": request,
         "unuploaded_count": unuploaded_count,
         "uploaded_count": uploaded_count,
@@ -124,11 +124,11 @@ async def get_stats():
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
     config = get_env_config()
-    return templates.TemplateResponse(request, "settings.html", {"request": request, "config": config})
+    return templates.TemplateResponse("settings.html", {"request": request, "config": config})
 
 @app.get("/auths", response_class=HTMLResponse)
 async def auths_page(request: Request):
-    return templates.TemplateResponse(request, "auths.html", {"request": request})
+    return templates.TemplateResponse("auths.html", {"request": request})
 
 @app.get("/api/auths")
 async def get_auths_files():
