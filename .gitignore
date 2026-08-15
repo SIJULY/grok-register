@@ -10,6 +10,7 @@ debug_device/
 debug_mails/
 *.json
 *.html
+!web/templates/*.html
 *.png
 
 # Logs

@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}JSON 存档管理{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2 class="text-2xl font-bold text-gray-800">账号 & JSON 文件管理</h2>
+    <p class="text-gray-600 mt-1">管理未转换账号、已上传/未上传的 JSON 存档文件。</p>
+</div>
+
+<!-- Tabs -->
+<div class="mb-4 border-b border-gray-200">
+    <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="myTab" data-tabs-toggle="#myTabContent" role="tablist">
+        <li class="mr-2" role="presentation">
+            <button class="inline-block p-4 border-b-2 rounded-t-lg hover:text-blue-600 hover:border-blue-300" id="unuploaded-tab" data-tabs-target="#unuploaded" type="button" role="tab" onclick="switchTab('unuploaded')">未上传账号 (Unuploaded)</button>
+        </li>
+        <li class="mr-2" role="presentation">
+            <button class="inline-block p-4 border-b-2 rounded-t-lg hover:text-blue-600 hover:border-blue-300" id="uploaded-tab" data-tabs-target="#uploaded" type="button" role="tab" onclick="switchTab('uploaded')">已上传账号 (Uploaded)</button>
+        </li>
+        <li role="presentation">
+            <button class="inline-block p-4 border-b-2 rounded-t-lg hover:text-blue-600 hover:border-blue-300" id="all-tab" data-tabs-target="#all" type="button" role="tab" onclick="switchTab('all')">所有 JSON 存档 (All JSONs)</button>
+        </li>
+    </ul>
+</div>
+
+<!-- Action Bar -->
+<div class="mb-4 flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-gray-200">
+    <div id="tab-title" class="font-medium text-gray-700">正在加载...</div>
+    <div class="flex space-x-2" id="action-buttons">
+        <!-- Buttons will be rendered dynamically based on active tab -->
+    </div>
+</div>
+
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead id="table-head">
+                <!-- Dynamically rendered -->
+            </thead>
+            <tbody id="fileList" class="text-sm divide-y divide-gray-100">
+                <tr>
+                    <td colspan="5" class="py-8 text-center text-gray-500">
+                        <i class="fa-solid fa-spinner fa-spin mr-2"></i>正在加载...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-60 hidden flex flex-col items-center justify-center z-[100]">
+    <i class="fa-solid fa-circle-notch fa-spin text-white text-6xl mb-6"></i>
+    <div id="loadingText" class="text-white text-xl font-medium text-center px-6 max-w-lg whitespace-pre-wrap"></div>
+</div>
+
+<!-- Preview Modal -->
+<div id="previewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[80vh] flex flex-col">
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-gray-800" id="previewTitle">文件预览</h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-6 overflow-y-auto flex-1 bg-gray-50">
+            <pre id="previewContent" class="text-xs font-mono text-gray-800 whitespace-pre-wrap break-all"></pre>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end">
+            <button onclick="closeModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-6 rounded transition-colors">
+                关闭
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentTab = 'unuploaded';
+    let authFilesData = [];
+
+    // 初始化加载
+    document.addEventListener('DOMContentLoaded', () => {
+        switchTab('unuploaded');
+    });
+
+    function switchTab(tabId) {
+        currentTab = tabId;
+        
+        // 更新 Tab 样式
+        const tabs = ['unuploaded', 'uploaded', 'all'];
+        tabs.forEach(t => {
+            const btn = document.getElementById(`${t}-tab`);
+            if (t === tabId) {
+                btn.classList.add('text-blue-600', 'border-blue-600', 'border-b-2');
+                btn.classList.remove('border-transparent');
+            } else {
+                btn.classList.remove('text-blue-600', 'border-blue-600', 'border-b-2');
+                btn.classList.add('border-transparent');
+            }
+        });
+
+        // 渲染操作栏和表头
+        renderActionBar();
+        
+        // 加载数据
+        if (tabId === 'pending') {
+            fetchPendingAccounts();
+        } else {
+            fetchAuthsFiles();
+        }
+    }
+
+    function renderActionBar() {
+        const titleEl = document.getElementById('tab-title');
+        const actionsEl = document.getElementById('action-buttons');
+        const theadEl = document.getElementById('table-head');
+
+        let title = '';
+        let buttonsHtml = '';
+        let theadHtml = '';
+
+        const selectAllCheckbox = `<input type="checkbox" id="selectAll" onclick="toggleSelectAll()" class="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500">`;
+
+        if (currentTab === 'unuploaded') {
+            title = '<i class="fa-solid fa-cloud-arrow-down mr-2 text-gray-500"></i> 未上传的 JSON 凭证';
+            buttonsHtml = `
+                <button onclick="uploadSelectedFiles()" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded transition-colors flex items-center shadow-sm">
+                    <i class="fa-solid fa-cloud-arrow-up mr-2"></i> 上传选中到 CPA
+                </button>
+            `;
+        } else if (currentTab === 'uploaded') {
+            title = '<i class="fa-solid fa-check-circle mr-2 text-green-500"></i> 已成功上传到 CPA 的 JSON 凭证';
+        } else if (currentTab === 'all') {
+            title = '<i class="fa-solid fa-folder-open mr-2 text-blue-500"></i> 所有的 JSON 凭证文件';
+        }
+
+        buttonsHtml += `
+            <button onclick="deleteSelectedFiles()" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded transition-colors flex items-center shadow-sm">
+                <i class="fa-solid fa-trash mr-2"></i> 删除选中
+            </button>
+            <button onclick="fetchAuthsFiles()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded transition-colors flex items-center shadow-sm">
+                <i class="fa-solid fa-rotate mr-2"></i> 刷新
+            </button>
+        `;
+        
+        theadHtml = `
+            <tr class="bg-gray-50 border-b border-gray-200 text-sm font-medium text-gray-700">
+                <th class="py-3 px-6 w-10 text-center">${selectAllCheckbox}</th>
+                <th class="py-3 px-6">文件名</th>
+                <th class="py-3 px-6">文件大小</th>
+                <th class="py-3 px-6">上传状态</th>
+                <th class="py-3 px-6">操作</th>
+            </tr>
+        `;
+
+        titleEl.innerHTML = title;
+        actionsEl.innerHTML = buttonsHtml;
+        theadEl.innerHTML = theadHtml;
+    }
+
+    async function fetchAuthsFiles() {
+        const tbody = document.getElementById('fileList');
+        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-gray-500"><i class="fa-solid fa-spinner fa-spin mr-2"></i>正在加载...</td></tr>`;
+        
+        try {
+            const response = await fetch('/api/auths');
+            if (!response.ok) throw new Error('网络请求失败');
+            const data = await response.json();
+            authFilesData = data.files;
+            renderAuthsFiles();
+        } catch (error) {
+            tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-red-500"><i class="fa-solid fa-circle-exclamation mr-2"></i>加载失败: ${error.message}</td></tr>`;
+        }
+    }
+
+    function renderAuthsFiles() {
+        const tbody = document.getElementById('fileList');
+        
+        let filteredFiles = authFilesData;
+        if (currentTab === 'unuploaded') {
+            filteredFiles = authFilesData.filter(f => !f.cpa_uploaded);
+        } else if (currentTab === 'uploaded') {
+            filteredFiles = authFilesData.filter(f => f.cpa_uploaded);
+        }
+
+        if (filteredFiles.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-gray-500">没有符合条件的 JSON 文件。</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = filteredFiles.map(file => `
+            <tr class="hover:bg-gray-50 transition-colors">
+                <td class="py-3 px-6 text-center">
+                    <input type="checkbox" value="${file.name}" class="file-checkbox w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500">
+                </td>
+                <td class="py-3 px-6 font-medium text-gray-800">${file.name}</td>
+                <td class="py-3 px-6 text-gray-500">${file.size}</td>
+                <td class="py-3 px-6">
+                    <span class="px-2 py-1 text-xs rounded font-medium ${file.cpa_uploaded ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                        ${file.cpa_uploaded ? '已上传' : '未上传'}
+                    </span>
+                </td>
+                <td class="py-3 px-6">
+                    <button onclick="previewFile('${file.name}')" class="text-blue-600 hover:text-blue-800 mr-3 text-sm focus:outline-none">
+                        <i class="fa-solid fa-eye mr-1"></i>查看
+                    </button>
+                    <a href="/api/auths/${file.name}" download class="text-green-600 hover:text-green-800 text-sm focus:outline-none">
+                        <i class="fa-solid fa-download mr-1"></i>下载
+                    </a>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function toggleSelectAll() {
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.file-checkbox');
+        checkboxes.forEach(cb => cb.checked = selectAll.checked);
+    }
+
+    function getSelectedItems() {
+        const checkboxes = document.querySelectorAll('.file-checkbox:checked');
+        return Array.from(checkboxes).map(cb => cb.value);
+    }
+
+    async function deleteSelectedFiles() {
+        const selected = getSelectedItems();
+        if (selected.length === 0) {
+            alert('请先选择要删除的文件');
+            return;
+        }
+        if (!confirm(`确定要删除选中的 ${selected.length} 个 JSON 文件吗？此操作不可恢复。`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/auths/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filenames: selected })
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                alert(`成功删除 ${data.deleted} 个文件`);
+                document.getElementById('selectAll').checked = false;
+                fetchAuthsFiles();
+            } else {
+                alert('删除失败: ' + (data.error || '未知错误'));
+            }
+        } catch (error) {
+            alert('请求失败: ' + error.message);
+        }
+    }
+
+    async function uploadSelectedFiles() {
+        const selected = getSelectedItems();
+        if (selected.length === 0) {
+            alert('请先选择要上传的文件');
+            return;
+        }
+        if (!confirm(`将强制上传选中的 ${selected.length} 个 JSON 文件到 CPA，确定吗？`)) {
+            return;
+        }
+        
+        const overlay = document.getElementById('loadingOverlay');
+        const overlayText = document.getElementById('loadingText');
+        
+        try {
+            overlay.classList.remove('hidden');
+            overlayText.innerHTML = `正在将 ${selected.length} 个文件上传到 CPA...<br><span class="text-sm text-gray-300 mt-2 block">请勿关闭或刷新页面</span>`;
+
+            const response = await fetch('/api/auths/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filenames: selected })
+            });
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                let successCount = data.results.filter(r => r.success).length;
+                let failCount = data.results.length - successCount;
+                alert(`上传完成！\n成功: ${successCount}\n失败: ${failCount}`);
+                document.getElementById('selectAll').checked = false;
+                fetchAuthsFiles();
+            } else {
+                alert('上传请求失败: ' + (data.error || '未知错误'));
+                fetchAuthsFiles();
+            }
+        } catch (error) {
+            alert('请求失败: ' + error.message);
+            fetchAuthsFiles();
+        } finally {
+            overlay.classList.add('hidden');
+        }
+    }
+
+    async function previewFile(filename) {
+        try {
+            const response = await fetch(`/api/auths/${filename}`);
+            if (!response.ok) throw new Error('获取文件失败');
+            const data = await response.json();
+            
+            document.getElementById('previewTitle').textContent = filename;
+            document.getElementById('previewContent').textContent = JSON.stringify(data, null, 2);
+            document.getElementById('previewModal').classList.remove('hidden');
+        } catch (error) {
+            alert(`预览失败: ${error.message}`);
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('previewModal').classList.add('hidden');
+    }
+
+</script>
+{% endblock %}

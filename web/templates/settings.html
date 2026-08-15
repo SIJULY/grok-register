@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}环境配置{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex justify-between items-end">
+    <div>
+        <h2 class="text-2xl font-bold text-gray-800">环境配置 (Settings)</h2>
+        <p class="text-gray-600 mt-1">编辑 .env 文件中的配置项。修改后即时生效（针对下一次运行的脚本）。</p>
+    </div>
+    <div id="toast" class="hidden opacity-0 transition-opacity duration-300 bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded shadow-sm">
+        <span class="block sm:inline">配置已成功保存！</span>
+    </div>
+</div>
+
+<div class="space-y-6">
+    
+    <!-- 邮箱代理区域 -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-network-wired text-blue-500 mr-2"></i>邮箱 & 代理配置</h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">代理地址 (GROK_PROXY)</label>
+                    <input type="text" id="GROK_PROXY" value="{{ config.get('GROK_PROXY', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors" placeholder="例如: http://127.0.0.1:7897">
+                    <p class="text-xs text-gray-500 mt-1.5">留空表示直连。主要用于注册及 Device Flow。</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">邮箱域名 (GROK_DOMAIN)</label>
+                    <input type="text" id="GROK_DOMAIN" value="{{ config.get('GROK_DOMAIN', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors" placeholder="例如: lahtim.io">
+                </div>
+            </div>
+        </div>
+        <div class="px-6 py-3 border-t border-gray-100 bg-gray-50 flex justify-end">
+            <button onclick="saveGroup(['GROK_PROXY', 'GROK_DOMAIN'])" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-5 rounded-md transition-colors shadow-sm flex items-center">
+                <i class="fa-solid fa-save mr-2"></i> 保存配置
+            </button>
+        </div>
+    </div>
+
+    <!-- CPA 配置区域 -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-cloud-arrow-up text-blue-500 mr-2"></i>CPA 上传配置</h3>
+        </div>
+        <div class="p-6 space-y-5">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5">开启自动上传 (GROK_AUTO_UPLOAD_CPA)</label>
+                <select id="GROK_AUTO_UPLOAD_CPA" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                    <option value="1" {% if config.get('GROK_AUTO_UPLOAD_CPA') in ['1', 'true', 'yes'] %}selected{% endif %}>开启 (True)</option>
+                    <option value="0" {% if config.get('GROK_AUTO_UPLOAD_CPA') in ['0', 'false', 'no'] %}selected{% endif %}>关闭 (False)</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">CPA 面板地址 (GROK_CPA_API_URL)</label>
+                    <input type="text" id="GROK_CPA_API_URL" value="{{ config.get('GROK_CPA_API_URL', 'https://ai.sijuly.tk') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">管理员密码/Token (GROK_CPA_API_TOKEN)</label>
+                    <input type="password" id="GROK_CPA_API_TOKEN" value="{{ config.get('GROK_CPA_API_TOKEN', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                </div>
+            </div>
+        </div>
+        <div class="px-6 py-3 border-t border-gray-100 bg-gray-50 flex justify-end">
+            <button onclick="saveGroup(['GROK_AUTO_UPLOAD_CPA', 'GROK_CPA_API_URL', 'GROK_CPA_API_TOKEN'])" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-5 rounded-md transition-colors shadow-sm flex items-center">
+                <i class="fa-solid fa-save mr-2"></i> 保存配置
+            </button>
+        </div>
+    </div>
+    
+    <!-- 其他配置 -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-sliders text-blue-500 mr-2"></i>其他高级配置</h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">验证码服务 (GROK_CAPTCHA_SERVICE)</label>
+                    <input type="text" id="GROK_CAPTCHA_SERVICE" value="{{ config.get('GROK_CAPTCHA_SERVICE', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">YesCaptcha 密钥 (YESCAPTCHA_CLIENT_KEY)</label>
+                    <input type="text" id="YESCAPTCHA_CLIENT_KEY" value="{{ config.get('YESCAPTCHA_CLIENT_KEY', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">EzCaptcha 密钥 (EZCAPTCHA_CLIENT_KEY)</label>
+                    <input type="text" id="EZCAPTCHA_CLIENT_KEY" value="{{ config.get('EZCAPTCHA_CLIENT_KEY', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">并发数 (GROK_THREADS)</label>
+                    <input type="number" id="GROK_THREADS" value="{{ config.get('GROK_THREADS', '1') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                </div>
+            </div>
+        </div>
+        <div class="px-6 py-3 border-t border-gray-100 bg-gray-50 flex justify-end">
+            <button onclick="saveGroup(['GROK_CAPTCHA_SERVICE', 'YESCAPTCHA_CLIENT_KEY', 'EZCAPTCHA_CLIENT_KEY', 'GROK_THREADS'])" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-5 rounded-md transition-colors shadow-sm flex items-center">
+                <i class="fa-solid fa-save mr-2"></i> 保存配置
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let toastTimeout;
+    function showToast() {
+        const toast = document.getElementById('toast');
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.remove('opacity-0'), 10);
+        
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            toast.classList.add('opacity-0');
+            setTimeout(() => toast.classList.add('hidden'), 300);
+        }, 2500);
+    }
+
+    function saveGroup(keys) {
+        const payload = {};
+        for (let key of keys) {
+            const input = document.getElementById(key);
+            if (input) {
+                payload[key] = input.value;
+            }
+        }
+        
+        fetch('/api/settings/update_single', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showToast();
+            } else {
+                alert("保存失败: " + data.message);
+            }
+        })
+        .catch(err => {
+            console.error("Fetch error:", err);
+            alert("请求错误，详见控制台。");
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}控制台{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">控制面板</h2>
+    <p class="text-gray-600 mt-1">管理和运行 Grok 批量注册与 CPA 自动上传任务</p>
+</div>
+
+<!-- Stats / Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    
+    <!-- Register Card -->
+    <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200 md:col-span-2">
+        <div class="flex justify-between items-start">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800"><i class="fa-solid fa-user-plus text-blue-500 mr-2"></i>Grok 注册任务</h3>
+                <p class="text-sm text-gray-500 mt-1">自动拉取邮件、识别验证码、生成 SSO、转换凭证。</p>
+            </div>
+        </div>
+        
+        <div class="mt-4 flex items-center mb-4">
+            <input type="checkbox" id="chkAutoUpload" {% if auto_upload_cpa in ['1', 'true', 'yes', 'on'] %}checked{% endif %} class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+            <label for="chkAutoUpload" class="ml-2 text-sm font-medium text-gray-700">自动上传至 CPA</label>
+            <p class="text-xs text-gray-400 ml-2">(转换完成后自动上传)</p>
+        </div>
+
+        <div class="mt-4 flex items-center justify-between">
+            <div class="text-sm">
+                <span class="text-gray-500">未上传:</span>
+                <span class="font-bold text-yellow-600 ml-1" id="unuploadedCountSpan">{{ unuploaded_count }} 个</span>
+                <span class="text-gray-500 ml-4">已上传:</span>
+                <span class="font-bold text-green-600 ml-1" id="uploadedCountSpan">{{ uploaded_count }} 个</span>
+                <span class="text-gray-500 ml-4">所有 JSON 凭证:</span>
+                <span class="font-bold text-blue-600 ml-1" id="allCountSpan">{{ all_count }} 个</span>
+            </div>
+            <div class="flex space-x-2">
+                <button id="btnStartGrok" onclick="startTask('START_GROK')" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors flex items-center">
+                    <i class="fa-solid fa-play mr-2"></i> 开始注册
+                </button>
+                <button id="btnStopGrok" onclick="stopTask()" disabled class="opacity-50 cursor-not-allowed bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded transition-colors flex items-center">
+                    <i class="fa-solid fa-stop mr-2"></i> 停止注册
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Terminal Area -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col" style="height: 500px;">
+    <div class="px-4 py-3 border-b border-gray-200 flex justify-between items-center bg-gray-50 rounded-t-lg">
+        <h3 class="font-medium text-gray-700 flex items-center">
+            <i class="fa-solid fa-terminal mr-2"></i> 实时终端输出
+        </h3>
+        <button onclick="clearTerminal()" class="text-xs text-gray-500 hover:text-gray-700">
+            <i class="fa-solid fa-eraser mr-1"></i> 清空
+        </button>
+    </div>
+    <div id="terminal" class="terminal-output flex-1 p-4 overflow-y-auto text-sm rounded-b-lg">等待启动任务...</div>
+</div>
+
+<script>
+    let ws = null;
+
+    function appendToTerminal(text) {
+        const terminal = document.getElementById('terminal');
+        // Simple html escaping and ansi stripping
+        let safeText = text.replace(/</g, "<").replace(/>/g, ">");
+        safeText = safeText.replace(/\x1b\[[0-9;]*m/g, ""); // strip ansi
+        
+        // --- Added Highlighting Logic ---
+        
+        // Highlight errors/failures
+        safeText = safeText.replace(/(\[-].*?(?:失败|异常|错误|Error).*?)(?=\n|<br>|$)/gi, "<span class='text-red-500'>$1</span>");
+        
+        // Highlight success/OK markers
+        safeText = safeText.replace(/(\[OK].*?)(?=\n|<br>|$)/gi, "<span class='text-green-500 font-bold'>$1</span>");
+        
+        // Highlight warning markers
+        safeText = safeText.replace(/(\[Warn].*?)(?=\n|<br>|$)/gi, "<span class='text-yellow-500'>$1</span>");
+        
+        // Highlight system and important node markers
+        safeText = safeText.replace(/(\[系统].*?)(?=\n|<br>|$)/g, "<span class='text-blue-600 font-bold'>$1</span>");
+        
+        // Highlight CPA / DEVICE nodes
+        safeText = safeText.replace(/(\[CPA].*?)(?=\n|<br>|$)/g, "<span class='text-purple-600'>$1</span>");
+        safeText = safeText.replace(/(\[DEVICE].*?)(?=\n|<br>|$)/g, "<span class='text-teal-600'>$1</span>");
+
+        // Highlight email markers
+        safeText = safeText.replace(/(\[.*@.*].*?开始 SSO → CLIProxyAPI OAuth auth JSON.*?)(?=\n|<br>|$)/g, "<span class='text-indigo-600 font-bold'>$1</span>");
+
+        // Use pre line breaks by splitting and re-joining for multiline match support if needed, or rely on original structure
+        safeText = safeText.replace(/\n/g, "<br>");
+        
+        if (terminal.innerHTML === "等待启动任务...") {
+            terminal.innerHTML = "";
+        }
+        
+        terminal.innerHTML += safeText;
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function clearTerminal() {
+        document.getElementById('terminal').innerHTML = "等待启动任务...";
+    }
+
+    function toggleButtons(isRunning) {
+        const startBtnGrok = document.getElementById('btnStartGrok');
+        const stopBtnGrok = document.getElementById('btnStopGrok');
+        const chkAutoUpload = document.getElementById('chkAutoUpload');
+
+        if (isRunning) {
+            if (startBtnGrok) {
+                startBtnGrok.disabled = true;
+                startBtnGrok.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            if (chkAutoUpload) {
+                chkAutoUpload.disabled = true;
+            }
+            if (stopBtnGrok) {
+                stopBtnGrok.disabled = false;
+                stopBtnGrok.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        } else {
+            if (startBtnGrok) {
+                startBtnGrok.disabled = false;
+                startBtnGrok.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            if (chkAutoUpload) {
+                chkAutoUpload.disabled = false;
+            }
+            if (stopBtnGrok) {
+                stopBtnGrok.disabled = true;
+                stopBtnGrok.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+    }
+
+    // 定时刷新统计数据
+    function refreshStats() {
+        fetch('/api/stats')
+            .then(response => response.json())
+            .then(data => {
+                const u = document.getElementById('unuploadedCountSpan');
+                if(u) u.textContent = data.unuploaded_count + ' 个';
+                
+                const up = document.getElementById('uploadedCountSpan');
+                if(up) up.textContent = data.uploaded_count + ' 个';
+                
+                const a = document.getElementById('allCountSpan');
+                if(a) a.textContent = data.all_count + ' 个';
+            })
+            .catch(err => console.error("Failed to fetch stats:", err));
+    }
+    
+    setInterval(refreshStats, 3000);
+
+    function connectWebSocket() {
+        if (ws) return;
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        ws = new WebSocket(`${protocol}//${window.location.host}/ws/task`);
+        
+        ws.onmessage = function(event) {
+            const data = event.data;
+            if (data.startsWith("STATUS:")) {
+                const status = data.split(":")[1].trim();
+                if (status === "RUNNING") {
+                    toggleButtons(true);
+                } else {
+                    toggleButtons(false);
+                }
+                return;
+            }
+            
+            // 正常的日志推送
+            appendToTerminal(data);
+        };
+        
+        ws.onclose = function() {
+            appendToTerminal("\n[系统] WebSocket 连接已断开，3秒后尝试重连...\n");
+            ws = null;
+            setTimeout(connectWebSocket, 3000);
+        };
+        
+        ws.onerror = function() {
+            // let onclose handle reconnect
+        };
+    }
+
+    // 页面加载完毕即连接 WebSocket，接收日志和状态
+    window.addEventListener('DOMContentLoaded', () => {
+        connectWebSocket();
+        
+        // 监听勾选框状态变化，即时同步修改到系统配置文件
+        const chk = document.getElementById('chkAutoUpload');
+        if (chk) {
+            chk.addEventListener('change', function() {
+                fetch('/api/settings/update_single', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        'GROK_AUTO_UPLOAD_CPA': this.checked ? '1' : '0'
+                    })
+                }).catch(err => console.error("同步配置失败", err));
+            });
+        }
+    });
+
+    function startTask(taskCmd) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            alert("正在连接服务器，请稍后重试...");
+            return;
+        }
+
+        clearTerminal();
+        const chkAutoUpload = document.getElementById('chkAutoUpload');
+        const autoUploadVal = (chkAutoUpload && chkAutoUpload.checked) ? "1" : "0";
+        ws.send(taskCmd + ":" + autoUploadVal);
+    }
+
+    function stopTask() {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send("STOP");
+            // 禁用停止按钮以防止用户狂点
+            const stopBtnGrok = document.getElementById('btnStopGrok');
+            if (stopBtnGrok) {
+                stopBtnGrok.disabled = true;
+                stopBtnGrok.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+    }
+</script>
+{% endblock %}

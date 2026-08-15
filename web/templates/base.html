@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Grok-Register{% endblock %} - WebUI</title>
+    <!-- 使用 Tailwind CSS 和 FontAwesome 构建现代 UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .terminal-output {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Consolas', 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex h-screen overflow-hidden text-gray-800">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-slate-800 text-white flex flex-col hidden md:flex">
+        <div class="h-16 flex items-center justify-center border-b border-slate-700">
+            <h1 class="text-xl font-bold">
+                <i class="fa-solid fa-robot mr-2"></i>Grok Register
+            </h1>
+        </div>
+        <nav class="flex-1 overflow-y-auto py-4">
+            <ul class="space-y-1">
+                <li>
+                    <a href="/" class="flex items-center px-6 py-3 hover:bg-slate-700 transition-colors {% if request.url.path == '/' %}bg-slate-700 border-l-4 border-blue-500{% endif %}">
+                        <i class="fa-solid fa-terminal w-6"></i>
+                        <span>控制台 (Console)</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/auths" class="flex items-center px-6 py-3 hover:bg-slate-700 transition-colors {% if request.url.path == '/auths' %}bg-slate-700 border-l-4 border-blue-500{% endif %}">
+                        <i class="fa-solid fa-folder-open w-6"></i>
+                        <span>账号&JSON管理 (Auths)</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/settings" class="flex items-center px-6 py-3 hover:bg-slate-700 transition-colors {% if request.url.path == '/settings' %}bg-slate-700 border-l-4 border-blue-500{% endif %}">
+                        <i class="fa-solid fa-cog w-6"></i>
+                        <span>环境配置 (Settings)</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="p-4 border-t border-slate-700 text-sm text-slate-400">
+            <p>Grok-Register WebUI v1.0</p>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Top Navbar (Mobile only) -->
+        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-4 md:hidden">
+            <h1 class="text-lg font-bold"><i class="fa-solid fa-robot mr-2"></i>Grok Register</h1>
+            <button class="text-gray-500 focus:outline-none">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </header>
+
+        <!-- Main Area -->
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html>
