@@ -1,0 +1,23 @@
+{
+  "type": "xai",
+  "auth_kind": "oauth",
+  "access_token": "eyJ0eXAiOiJhdCtqd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6Im9hdXRoMi1wcm9kdWN0aW9uLTIwMjYtMDItMTkifQ.eyJpc3MiOiJodHRwczovL2F1dGgueC5haSIsInN1YiI6ImQ5ODZhMTQwLTEwNTktNGFiYi1hYjdhLTEzMTY4MjM2NzFiMiIsImF1ZCI6ImIxYTAwNDkyLTA3M2EtNDdlYS04MTZmLTRjMzI5MjY0YTgyOCIsImV4cCI6MTc4NjcxNjAxMiwiaWF0IjoxNzg2Njk0NDEyLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIG9mZmxpbmVfYWNjZXNzIGdyb2stY2xpOmFjY2VzcyBhcGk6YWNjZXNzIiwicHJpbmNpcGFsX3R5cGUiOiJVc2VyIiwicHJpbmNpcGFsX2lkIjoiZDk4NmExNDAtMTA1OS00YWJiLWFiN2EtMTMxNjgyMzY3MWIyIiwiY2xpZW50X2lkIjoiYjFhMDA0OTItMDczYS00N2VhLTgxNmYtNGMzMjkyNjRhODI4IiwianRpIjoiYTM3YmFiNmItZGQ4NS00ZTk2LTg4M2YtZjU1ODE4ODk4ODBhIiwidGVhbV9pZCI6IjNmZGI0YWEzLTQ1ZDYtNDU5MC1iOWFmLWIzMTY5OGY0MGQzZCJ9.4x7cCLqFuz3ZLJqxXliNuNlF-yO_7PmCKsrYsZuhDk1fb1fqhh2-VlYNtsKSrHenkdoFEBupNUEY5EUqOpRGAg",
+  "refresh_token": "cZViCnCkTtGMTeRIm55Htr8FaAOjxh5ZzxsySGs2PtQ-MPaG8EpwGvMk9tp39JGolkyRBdafGUmrnW7l9fot6g",
+  "token_type": "Bearer",
+  "expires_in": 21600,
+  "expired": "2026-08-14T14:00:12Z",
+  "last_refresh": "2026-08-14T08:00:12Z",
+  "email": "grok6dhkhcz7ot@lahtim.io",
+  "base_url": "https://cli-chat-proxy.grok.com/v1",
+  "token_endpoint": "https://auth.x.ai/oauth2/token",
+  "redirect_uri": "http://127.0.0.1:56121/callback",
+  "client_id": "b1a00492-073a-47ea-816f-4c329264a828",
+  "disabled": false,
+  "mint_method": "device_code",
+  "protocol_flow": "device_code",
+  "headers": {
+    "X-XAI-Token-Auth": "xai-grok-cli",
+    "x-grok-client-version": "0.2.93",
+    "x-grok-client-identifier": "grok-shell"
+  }
+}
