@@ -25,12 +25,30 @@ chmod +x install.sh
 
 > **注意：** 建议使用 `root` 用户运行以确保能够正常安装依赖的系统环境。
 
-安装成功后，请根据提示，在项目目录下的 `.env` 文件中配置你的相关密钥，然后使用以下命令启动项目：
+安装成功后，请根据提示，在项目目录下的 `.env` 文件中配置你的相关密钥。
 
+### 启动项目
+
+你可以选择前台运行或后台运行：
+
+**方式一：前台运行（适合测试，关闭 SSH 终端后会退出）**
 ```bash
 cd grok-register
 source .venv/bin/activate
 python webui.py
+```
+
+**方式二：后台运行（推荐，关闭 SSH 终端后程序继续运行）**
+```bash
+cd grok-register
+source .venv/bin/activate
+nohup python webui.py > run.log 2>&1 &
+```
+
+启动后，默认将在服务器的 `5001` 端口运行。你可以在浏览器中访问 `http://<服务器IP>:5001`。
+如果你需要停止后台运行的程序，可以使用以下命令：
+```bash
+pkill -f "python webui.py"
 ```
 
 ## 手动安装说明
@@ -61,8 +79,9 @@ python webui.py
    ```
 
 5. **启动项目**
+   同样地，手动安装后你也可以选择使用 `nohup` 来保持其在后台运行：
    ```bash
-   python webui.py
+   nohup python webui.py > run.log 2>&1 &
    ```
    默认将在本地监听 `http://127.0.0.1:5001`，可以通过浏览器访问。
 
