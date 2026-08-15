@@ -33,11 +33,12 @@ install_dependencies() {
     if [ -f /etc/debian_version ]; then
         echo -e "${GREEN}检测到 Debian/Ubuntu 系统，正在安装系统依赖...${NC}"
         apt-get update
-        apt-get install -y python3 python3-venv python3-pip git curl xvfb libasound2 libatk-bridge2.0-0 libgtk-3-0 libnss3 libx11-xcb1
+        # 移除了 libasound2 等可能在部分新版 Ubuntu (如 24.04) 上报错的包，这些交由 patchright 自动处理
+        apt-get install -y python3 python3-venv python3-pip git curl xvfb
     elif [ -f /etc/redhat-release ]; then
         echo -e "${GREEN}检测到 CentOS/RHEL 系统，正在安装系统依赖...${NC}"
         yum update -y
-        yum install -y python3 python3-pip git curl xorg-x11-server-Xvfb alsa-lib atk gtk3 nss libX11-xcb
+        yum install -y python3 python3-pip git curl xorg-x11-server-Xvfb
     else
         echo -e "${YELLOW}未知的 Linux 发行版，跳过系统依赖自动安装。请自行确认已安装 python3, git, curl 等。${NC}"
     fi
@@ -55,9 +56,15 @@ setup_python_env() {
     # 配置虚拟环境和安装 Python 依赖
     echo -e "${GREEN}配置 Python 虚拟环境...${NC}"
     if [ ! -d ".venv" ]; then
-        python3 -m venv .venv
+        python3 -m venv .venv || {
+            echo -e "${RED}创建虚拟环境失败！可能是 python3-venv 未成功安装。${NC}"
+            exit 1
+        }
     fi
-    source .venv/bin/activate
+    source .venv/bin/activate || {
+        echo -e "${RED}激活虚拟环境失败！${NC}"
+        exit 1
+    }
 
     echo -e "${GREEN}安装 Python 依赖库...${NC}"
     pip install --upgrade pip
