@@ -7,3 +7,5 @@ websockets
 beautifulsoup4
 curl_cffi
 patchright
+jinja2
+python-multipart
