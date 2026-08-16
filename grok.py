@@ -15,7 +15,7 @@ if sys.platform == "win32":
 load_dotenv(override=True)
 
 from email_service import EmailService
-from YesCaptcha_service import TurnstileService
+from TwoCaptcha_service import TurnstileService
 
 # 基础配置
 site_url = "https://accounts.x.ai"
