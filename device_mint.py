@@ -183,7 +183,9 @@ async def _browser_authorize(vuc, sso_jwt, interactive=False, wait_seconds=110):
 
     async with async_playwright() as p:
         launch_kwargs = {
-            "headless": False if interactive else (os.getenv("GROK_HEADLESS", "1").strip().lower() not in ("0", "false", "no")),
+            # CF Turnstile 对无头模式(Headless)拦截率极高。
+            # 为了保证连贯自动授权不掉登录态，默认关闭无头模式。
+            "headless": False if interactive else (os.getenv("GROK_HEADLESS", "0").strip().lower() not in ("0", "false", "no")),
             "args": [
                 "--disable-blink-features=AutomationControlled",
                 "--incognito"
