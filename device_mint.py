@@ -182,21 +182,36 @@ async def _browser_authorize(vuc, sso_jwt, interactive=False, wait_seconds=110):
             return False
 
     async with async_playwright() as p:
+        # 判断是否需要无头模式
+        is_headless = False if interactive else (os.getenv("GROK_HEADLESS", "1").strip().lower() not in ("0", "false", "no"))
+        
         launch_kwargs = {
-            # CF Turnstile 对无头模式(Headless)拦截率极高。
-            # 为了保证连贯自动授权不掉登录态，默认关闭无头模式。
-            "headless": False if interactive else (os.getenv("GROK_HEADLESS", "0").strip().lower() not in ("0", "false", "no")),
+            # 我们在 Playwright 层强制不用传统 headless 模式，以避免被注入大量特征
+            "headless": False,
             "args": [
                 "--disable-blink-features=AutomationControlled",
-                "--incognito"
+                "--incognito",
             ],
         }
+        if is_headless:
+            # 使用 Chrome 新版无头模式，指纹与有头模式完全一致，能绕过绝大部分检测
+            launch_kwargs["args"].append("--headless=new")
+
         if PROXY:
             launch_kwargs["proxy"] = {"server": PROXY}
+            
         browser = await p.chromium.launch(**launch_kwargs)
+        
+        # 强制指定真实 UA，防止包含 "HeadlessChrome" 从而被 CF 拦截
         ctx = await browser.new_context(
-            viewport={"width": 1000, "height": 700}
+            viewport={"width": 1000, "height": 700},
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"
         )
+        # 注入基础的 stealth 脚本，抹除 webdriver 等机器特征
+        await ctx.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            window.navigator.chrome = { runtime: {} };
+        """)
         await ctx.add_cookies([{
             "name": "sso", "value": sso_jwt, "domain": ".x.ai", "path": "/",
             "secure": True, "httpOnly": True, "sameSite": "Lax",
