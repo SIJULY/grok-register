@@ -154,15 +154,16 @@ async def _browser_authorize(vuc, sso_jwt, interactive=False, wait_seconds=110):
     async with async_playwright() as p:
         launch_kwargs = {
             "headless": False if interactive else (os.getenv("GROK_HEADLESS", "1").strip().lower() not in ("0", "false", "no")),
-            "args": ["--disable-blink-features=AutomationControlled"],
+            "args": [
+                "--disable-blink-features=AutomationControlled",
+                "--incognito"
+            ],
         }
         if PROXY:
             launch_kwargs["proxy"] = {"server": PROXY}
         browser = await p.chromium.launch(**launch_kwargs)
-        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
         ctx = await browser.new_context(
-            viewport={"width": 1000, "height": 700},
-            user_agent=user_agent
+            viewport={"width": 1000, "height": 700}
         )
         cookies_to_add = []
         for d in [".x.ai", "accounts.x.ai", "auth.x.ai"]:
