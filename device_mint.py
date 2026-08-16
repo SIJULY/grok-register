@@ -164,10 +164,14 @@ async def _browser_authorize(vuc, sso_jwt, interactive=False, wait_seconds=110):
             viewport={"width": 1000, "height": 700},
             user_agent=user_agent
         )
-        await ctx.add_cookies([{
-            "name": "sso", "value": sso_jwt, "domain": ".x.ai", "path": "/",
-            "secure": True, "httpOnly": True, "sameSite": "Lax",
-        }])
+        cookies_to_add = []
+        for d in [".x.ai", "accounts.x.ai", "auth.x.ai"]:
+            for c_name in ["sso", "sso-rw"]:
+                cookies_to_add.append({
+                    "name": c_name, "value": sso_jwt, "domain": d, "path": "/",
+                    "secure": True, "httpOnly": True, "sameSite": "None",
+                })
+        await ctx.add_cookies(cookies_to_add)
         page = await ctx.new_page()
         keep_browser_open = False
         try:
