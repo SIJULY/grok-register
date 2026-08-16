@@ -23,18 +23,49 @@
         <div class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">邮箱提供商 (EMAIL_PROVIDER)</label>
+                    <select id="EMAIL_PROVIDER" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                        <option value="domain" {% if config.get('EMAIL_PROVIDER', 'domain') == 'domain' %}selected{% endif %}>自建域名邮箱 (domain) - 默认首选</option>
+                        <option value="gptmail" {% if config.get('EMAIL_PROVIDER') == 'gptmail' %}selected{% endif %}>GPTMail (gptmail)</option>
+                        <option value="luckmail" {% if config.get('EMAIL_PROVIDER') == 'luckmail' %}selected{% endif %}>LuckMail (luckmail)</option>
+                        <option value="mailnest" {% if config.get('EMAIL_PROVIDER') == 'mailnest' %}selected{% endif %}>MailNest (mailnest)</option>
+                    </select>
+                </div>
+                <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1.5">代理地址 (GROK_PROXY)</label>
                     <input type="text" id="GROK_PROXY" value="{{ config.get('GROK_PROXY', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors" placeholder="例如: http://127.0.0.1:7897">
                     <p class="text-xs text-gray-500 mt-1.5">留空表示直连。主要用于注册及 Device Flow。</p>
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">邮箱域名 (GROK_DOMAIN)</label>
-                    <input type="text" id="GROK_DOMAIN" value="{{ config.get('GROK_DOMAIN', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors" placeholder="例如: lahtim.io">
+            </div>
+            
+            <div class="mt-6 border-t border-gray-200 pt-6">
+                <h4 class="text-md font-semibold text-gray-700 mb-4">自建域名邮箱配置 (HTTP 拉信接口模式)</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">接收域名 (DOMAIN_MAIL_DOMAIN)</label>
+                        <input type="text" id="DOMAIN_MAIL_DOMAIN" value="{{ config.get('DOMAIN_MAIL_DOMAIN', 'lahtim.io') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors" placeholder="例如: example.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">邮箱前缀 (DOMAIN_MAIL_PREFIX)</label>
+                        <input type="text" id="DOMAIN_MAIL_PREFIX" value="{{ config.get('DOMAIN_MAIL_PREFIX', 'grok') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">拉信接口 URL (DOMAIN_MAIL_API_URL)</label>
+                        <input type="text" id="DOMAIN_MAIL_API_URL" value="{{ config.get('DOMAIN_MAIL_API_URL', 'http://92.5.82.166:2099/Mail?token=2088&mail={mail}') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors" placeholder="例如: http://89.168.116.152:2099/Mail?token=xxx&mail={mail}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">随机长度 (DOMAIN_MAIL_RANDOM_LENGTH)</label>
+                        <input type="number" id="DOMAIN_MAIL_RANDOM_LENGTH" value="{{ config.get('DOMAIN_MAIL_RANDOM_LENGTH', '10') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">超时时间(秒) (DOMAIN_MAIL_API_TIMEOUT)</label>
+                        <input type="number" id="DOMAIN_MAIL_API_TIMEOUT" value="{{ config.get('DOMAIN_MAIL_API_TIMEOUT', '15') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                    </div>
                 </div>
             </div>
         </div>
         <div class="px-6 py-3 border-t border-gray-100 bg-gray-50 flex justify-end">
-            <button onclick="saveGroup(['GROK_PROXY', 'GROK_DOMAIN'])" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-5 rounded-md transition-colors shadow-sm flex items-center">
+            <button onclick="saveGroup(['EMAIL_PROVIDER', 'GROK_PROXY', 'DOMAIN_MAIL_DOMAIN', 'DOMAIN_MAIL_PREFIX', 'DOMAIN_MAIL_API_URL', 'DOMAIN_MAIL_RANDOM_LENGTH', 'DOMAIN_MAIL_API_TIMEOUT'])" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-5 rounded-md transition-colors shadow-sm flex items-center">
                 <i class="fa-solid fa-save mr-2"></i> 保存配置
             </button>
         </div>
