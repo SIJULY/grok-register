@@ -454,7 +454,8 @@ class GPTMailInboxV2:
 
     def __init__(self, proxies: Any = None):
         self.base_url = "https://mail.chatgpt.org.uk"
-        self.session = requests.Session()
+        # 使用 impersonate="chrome" 绕过浏览器的安全验证 (428 Error)
+        self.session = requests.Session(impersonate="chrome")
         if proxies:
             self.session.proxies.update(proxies)
         self.session.headers.update({
