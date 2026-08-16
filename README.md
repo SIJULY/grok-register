@@ -6,7 +6,7 @@ Grok-Register 是一个自动化工具，旨在管理和监控与特定服务交
 - **自动注册**: 自动化设备注册与轮换。
 - **Web 可视化面板**: 支持可视化的后台管理配置和任务实时日志流式推送展示（WebSocket）。
 - **多种验证码与代理支持**: 支持 YesCaptcha 以及灵活的自定义代理 (clash) 配置。
-- **多邮箱提供商支持**: 支持 LuckMail, MailNest, GPTMail。
+- **自建域名邮箱**: 支持 HTTP 拉信接口或 IMAP/catch-all 收件箱。
 
 ## 一键安装部署（推荐，适用于 Linux/VPS）
 
@@ -61,7 +61,7 @@ pkill -f "python webui.py"
 4. **配置环境变量**
    ```bash
    cp .env.example .env
-   # 然后使用你熟悉的编辑器编辑 .env 文件，填写必填的 YESCAPTCHA_KEY, 邮箱 API KEY，及按需开启的代理配置。
+   # 然后编辑 .env，填写验证码服务、自建域名邮箱及按需启用的代理配置。
    ```
 
 5. **启动项目**
@@ -73,7 +73,7 @@ pkill -f "python webui.py"
 
 ## 注意事项与配置说明
 
-- `.env` 文件不会被提交到远程仓库，它包含你的私密信息（如 YesCaptcha 密钥、邮箱提供商的 API 密钥）。不要向任何人泄露。
+- `.env` 文件不会被提交到远程仓库，其中可能包含验证码密钥和自建邮箱接口令牌，请勿泄露。
 - 当开启代理时，如果在控制台出现 `Could not resolve host` 等网络报错，请检查配置文件中指定的 `GROK_PROXY` 是否正确且代理软件在对应端口提供服务。
 - 自动化产生的用户配置文件 (`auths`)、调试页面信息 (`debug_device`) 与相关缓存将保留在项目目录下并在 `.gitignore` 规则中进行屏蔽。
 

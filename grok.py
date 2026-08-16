@@ -189,7 +189,7 @@ def verify_email_code_grpc(session, email, code):
         print(f"[-] {email} 验证验证码异常: {e}", flush=True)
         return False
 
-def register_single_thread(email_provider: str = "gptmail"):
+def register_single_thread(email_provider: str = "domain"):
     # 错峰启动，防止瞬时并发过高
     time.sleep(random.uniform(0, 5))
 
@@ -386,7 +386,7 @@ def register_single_thread(email_provider: str = "gptmail"):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--email-provider", choices=["domain", "gptmail", "luckmail", "mailtm", "mailnest", "gmail"], default=os.getenv("EMAIL_PROVIDER", "domain"), help="邮箱提供商：domain/gptmail/luckmail/mailtm/mailnest/gmail")
+    parser.add_argument("--email-provider", choices=["domain"], default="domain", help="邮箱提供商：仅支持自建域名邮箱")
     parser.add_argument("--threads", type=int, default=None, help="并发线程数")
     parser.add_argument("--count", type=int, default=0, help="总注册数量（0=无限）")
     parser.add_argument("--max-attempts", type=int, default=int(os.getenv("GROK_MAX_ATTEMPTS", "0") or "0"), help="最多尝试邮箱数（0=不限制；用于排查收不到验证码时避免无限换号）")

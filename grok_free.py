@@ -1,24 +1,27 @@
 """
-Grok 全自动注册 — 免费版 v4
+Grok 全自动注册 — 浏览器版
 ─────────────────────────────
-- 邮箱：GPTMail (mail.chatgpt.org.uk) 免费 API — 公共 Key gpt-test，日 20 万次
+- 邮箱：自建域名邮箱（统一使用 email_service.py）
 - Turnstile：DrissionPage 浏览器手动 turnstile.render()
 - 验证码：gRPC-web 协议发送 + 验证（对齐原始 grok.py）
 - 注册：Next.js Server Action POST（curl_cffi）
 - Clash IP 轮换：每次注册前切换代理节点降低风控
 - 输出：SSO + email:password:sso → keys/
 
-无需 YesCaptcha / LuckMail / MailTM
+- 无需第三方临时邮箱服务
 """
-import os, re, sys, json, time, random, string, struct, urllib.parse, argparse
+import os, re, sys, json, time, random, string, struct, argparse
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
 from curl_cffi import requests as cf_req
 from DrissionPage import ChromiumPage, ChromiumOptions
 import requests  # 标准 requests 用于 SSO 跳转，兼容 auth.grokipedia.com 等域名
+from dotenv import load_dotenv
+from email_service import EmailService
 
 # ── 配置 ──
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(SCRIPT_DIR, ".env"), override=True)
 SITE_URL = "https://accounts.x.ai"
 FALLBACK_SITE_KEY = "0x4AAAAAAAhr9JGVDZbrZOo0"
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
@@ -93,117 +96,6 @@ def verify_email_code_grpc(session, email, code):
     except Exception as e:
         print(f"  [!] 验证验证码异常: {e}")
         return False
-
-
-# ═══════════════════════ GPTMail 邮箱（新版 API） ═══════════════════════
-
-class GPTMailInbox:
-    """GPTMail 免费临时邮箱 —— 客户端生成邮箱 + inbox-token 注册
-
-    API 流程（2026-07 新版）:
-      1. GET  /api/domains/public  → 获取域名列表
-      2. 客户端拼邮箱: prefix@random_domain
-      3. POST /api/inbox-token     → 注册邮箱，获取 JWT token
-      4. GET  /api/emails?email=.. → 轮询邮件
-      5. GET  /api/email/{id}      → 获取邮件正文
-    """
-
-    def __init__(self):
-        proxy_dict = _proxy_dict() if PROXY else None
-        self.sess = cf_req.Session(impersonate="chrome120")
-        if proxy_dict:
-            self.sess.proxies = proxy_dict
-        self.email = ""
-        self.token = ""
-        self._domains = []
-
-    def _get_domains(self):
-        """获取活跃域名列表"""
-        if self._domains:
-            return self._domains
-        try:
-            # 预热
-            self.sess.get("https://mail.chatgpt.org.uk/", timeout=15)
-        except Exception:
-            pass
-        r = self.sess.get("https://mail.chatgpt.org.uk/api/domains/public", timeout=15)
-        if r.status_code != 200:
-            raise RuntimeError(f"获取域名失败: {r.status_code}")
-        data = r.json()
-        domains_list = (data.get("data") or {}).get("domains") or []
-        self._domains = [d["domain_name"] for d in domains_list if d.get("is_active")]
-        if not self._domains:
-            raise RuntimeError("无活跃域名")
-        return self._domains
-
-    def create(self):
-        """生成邮箱并注册"""
-        domains = self._get_domains()
-        prefix = rand_str(10)
-        domain = random.choice(domains)
-        self.email = f"{prefix}@{domain}"
-
-        # 注册邮箱到 inbox token
-        r = self.sess.post(
-            "https://mail.chatgpt.org.uk/api/inbox-token",
-            headers={"Content-Type": "application/json"},
-            json={"email": self.email},
-            timeout=15,
-        )
-        if r.status_code != 200:
-            raise RuntimeError(f"inbox-token 失败: {r.status_code}")
-        data = r.json()
-        if not data.get("success"):
-            raise RuntimeError(f"inbox-token 返回失败: {data}")
-        self.token = (data.get("auth") or {}).get("token") or ""
-        if not self.token:
-            raise RuntimeError("未获取到 inbox token")
-        return self.email
-
-    def wait_code(self, timeout=60, interval=5):
-        """轮询 GPTMail 获取验证码"""
-        deadline = time.time() + timeout
-        while time.time() < deadline:
-            time.sleep(interval)
-            try:
-                r = self.sess.get(
-                    f"https://mail.chatgpt.org.uk/api/emails?email={urllib.parse.quote(self.email)}",
-                    headers={"x-inbox-token": self.token},
-                    timeout=15,
-                )
-                if r.status_code != 200:
-                    continue
-                data = r.json()
-                emails = (data.get("data") or {}).get("emails") or data.get("data") or []
-                if isinstance(emails, dict):
-                    emails = [emails]
-                for msg in (emails if isinstance(emails, list) else []):
-                    subject = str(msg.get("subject") or "")
-                    body = str(msg.get("text") or msg.get("html") or msg.get("body") or "")
-                    text = subject + " " + body
-                    m = re.search(r"([A-Z0-9]{3})-?([A-Z0-9]{3})", text)
-                    if m:
-                        return m.group(1) + m.group(2)
-
-                # 如果邮件列表有 ID，获取详情
-                for msg in (emails if isinstance(emails, list) else []):
-                    msg_id = msg.get("id") or msg.get("message_id")
-                    if msg_id:
-                        r2 = self.sess.get(
-                            f"https://mail.chatgpt.org.uk/api/email/{urllib.parse.quote(str(msg_id))}",
-                            headers={"x-inbox-token": self.token},
-                            timeout=15,
-                        )
-                        if r2.status_code == 200:
-                            detail = r2.json()
-                            d = (detail.get("data") or detail)
-                            text2 = str(d.get("subject") or "") + " " + str(d.get("text") or d.get("html") or d.get("body") or "")
-                            m = re.search(r"([A-Z0-9]{3})-?([A-Z0-9]{3})", text2)
-                            if m:
-                                return m.group(1) + m.group(2)
-            except Exception:
-                continue
-        return None
 
 
 # ═══════════════════════ 浏览器初始化 ═══════════════════════
@@ -422,13 +314,14 @@ def register_one(cfg):
     """注册单个账号 → 返回 (email, password, sso) 或 None"""
 
     # ── 创建邮箱 ──
-    print("[Mail] 创建 Gmail 别名...")
+    print("[Mail] 创建自建域名邮箱...")
     try:
-        from email_service import GmailIMAPClient
-        mail = GmailIMAPClient()
-        email = mail.create_email()
+        mail_service = EmailService(proxies=_proxy_dict(), provider="domain")
+        mail_token, email = mail_service.create_email()
+        if not email:
+            raise RuntimeError("邮箱创建返回空")
     except Exception as e:
-        print(f"[Mail] Gmail 失败: {e}")
+        print(f"[Mail] 自建域名邮箱失败: {e}")
         return None
     print(f"[Mail] {email}")
 
@@ -453,7 +346,7 @@ def register_one(cfg):
     code = None
     for _ in range(36):  # 36 x 5s = 180s
         time.sleep(5)
-        content = mail.fetch_first_email()
+        content = mail_service.fetch_first_email(mail_token)
         if content:
             m = re.search(r"([A-Z0-9]{3})-?([A-Z0-9]{3})", content)
             if m:
@@ -593,7 +486,7 @@ def main():
     args = parser.parse_args()
 
     print("=" * 55)
-    print(f"Grok 注册 · 免费版 v4 (GPTMail + gRPC + Clash)")
+    print(f"Grok 注册 · 浏览器版 (自建域名邮箱 + gRPC + Clash)")
     print(f"数量: {args.count}  IP轮换: {'✅' if not args.no_rotate and HAS_CLASH else '❌'}")
     print("=" * 55)
 

@@ -36,13 +36,18 @@ async def solve_turnstile(site_url: str, site_key: str,
     last_error = None
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            headless=headless,
-            channel="chrome",  # 系统 Chrome（证书正确），不用自带的 Chromium
-            proxy={"server": PROXY},
-            args=["--disable-blink-features=AutomationControlled",
-                  f"--window-size={800 + (os.getpid() % 400)},{600 + (os.getpid() % 300)}"],
-        )
+        launch_args = {
+            "headless": headless,
+            "channel": "chrome",
+            "args": [
+                "--disable-blink-features=AutomationControlled",
+                f"--window-size={800 + (os.getpid() % 400)},{600 + (os.getpid() % 300)}"
+            ]
+        }
+        if PROXY:
+            launch_args["proxy"] = {"server": PROXY}
+
+        browser = await p.chromium.launch(**launch_args)
 
         for attempt in range(1, max_attempts + 1):
             context = None

@@ -250,7 +250,7 @@ def run_registration(count=3, rotate_region=False, use_free=False):
         extra_args = ["--no-rotate", "--count", "1", "--min-delay", "8", "--max-delay", "15"]
         timeout = 300  # 浏览器单个号 5 分钟
     else:
-        extra_args = ["--threads", "1", "--email-provider", "luckmail"]
+        extra_args = ["--threads", "1", "--email-provider", "domain"]
         timeout = 180
 
     success = 0
