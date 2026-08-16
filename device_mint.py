@@ -90,6 +90,7 @@ async def _browser_authorize(vuc, sso_jwt, interactive=False, wait_seconds=110):
             return []
 
     async def _click_by_text(page, patterns, log=True):
+        import random
         buttons = await _visible_buttons(page)
         if log:
             print(f"  [*] URL: {page.url}", flush=True)
@@ -103,8 +104,21 @@ async def _browser_authorize(vuc, sso_jwt, interactive=False, wait_seconds=110):
             for loc in locators:
                 try:
                     if await loc.count() and await loc.is_visible(timeout=1000):
-                        print(f"  [*] 点击控件: {pattern}", flush=True)
-                        await loc.click(timeout=5000)
+                        print(f"  [*] 拟真点击控件: {pattern}", flush=True)
+                        try:
+                            box = await loc.bounding_box()
+                            if box:
+                                target_x = box["x"] + box["width"] / 2
+                                target_y = box["y"] + box["height"] / 2
+                                await page.mouse.move(target_x + random.randint(-5, 5), target_y + random.randint(-5, 5), steps=8)
+                                await page.wait_for_timeout(random.randint(150, 400))
+                                await page.mouse.down()
+                                await page.wait_for_timeout(random.randint(50, 150))
+                                await page.mouse.up()
+                            else:
+                                await loc.click(timeout=5000, delay=100)
+                        except Exception:
+                            await loc.click(timeout=5000, delay=100)
                         await page.wait_for_timeout(2500)
                         return True
                 except Exception:
@@ -132,13 +146,29 @@ async def _browser_authorize(vuc, sso_jwt, interactive=False, wait_seconds=110):
         return False
 
     async def _click_exact_visible_text(page, texts):
+        import random
         for text in texts:
             try:
                 loc = page.get_by_text(text, exact=True).first
                 if await loc.count() and await loc.is_visible(timeout=1000):
-                    print(f"  [*] 点击验证控件: {text}", flush=True)
-                    await loc.click()
-                    await page.wait_for_timeout(3000)
+                    print(f"  [*] 拟真点击验证控件: {text}", flush=True)
+                    try:
+                        box = await loc.bounding_box()
+                        if box:
+                            target_x = box["x"] + box["width"] / 2
+                            target_y = box["y"] + box["height"] / 2
+                            # 模拟随机鼠标移动轨迹
+                            await page.mouse.move(target_x + random.randint(-10, 10), target_y + random.randint(-10, 10), steps=10)
+                            await page.wait_for_timeout(random.randint(200, 500))
+                            await page.mouse.move(target_x, target_y, steps=5)
+                            await page.mouse.down()
+                            await page.wait_for_timeout(random.randint(50, 150))
+                            await page.mouse.up()
+                        else:
+                            await loc.click(delay=100)
+                    except Exception:
+                        await loc.click(delay=100)
+                    await page.wait_for_timeout(4000)
                     return True
             except Exception:
                 pass
@@ -165,14 +195,10 @@ async def _browser_authorize(vuc, sso_jwt, interactive=False, wait_seconds=110):
         ctx = await browser.new_context(
             viewport={"width": 1000, "height": 700}
         )
-        cookies_to_add = []
-        for d in [".x.ai", "accounts.x.ai", "auth.x.ai"]:
-            for c_name in ["sso", "sso-rw"]:
-                cookies_to_add.append({
-                    "name": c_name, "value": sso_jwt, "domain": d, "path": "/",
-                    "secure": True, "httpOnly": True, "sameSite": "None",
-                })
-        await ctx.add_cookies(cookies_to_add)
+        await ctx.add_cookies([{
+            "name": "sso", "value": sso_jwt, "domain": ".x.ai", "path": "/",
+            "secure": True, "httpOnly": True, "sameSite": "Lax",
+        }])
         page = await ctx.new_page()
         keep_browser_open = False
         try:
