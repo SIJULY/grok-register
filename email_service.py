@@ -23,8 +23,10 @@ def _env_truthy(name: str) -> bool:
 def _domain_mail_settings() -> dict:
     """读取自建域名邮箱 HTTP 接口配置。"""
     return {
+        "mode": str(os.getenv("DOMAIN_MAIL_MODE") or "random").strip().lower(),
         "domain": str(os.getenv("DOMAIN_MAIL_DOMAIN") or "").strip().lstrip("@"),
         "api_url": str(os.getenv("DOMAIN_MAIL_API_URL") or "").strip(),
+        "generate_api_url": str(os.getenv("DOMAIN_MAIL_GENERATE_API_URL") or "").strip(),
         "api_timeout": int(str(os.getenv("DOMAIN_MAIL_API_TIMEOUT") or "15").strip() or "15"),
         "prefix": str(os.getenv("DOMAIN_MAIL_PREFIX") or "grok").strip() or "grok",
         "random_length": int(str(os.getenv("DOMAIN_MAIL_RANDOM_LENGTH") or "10").strip() or "10"),
@@ -56,8 +58,16 @@ class DomainMailHTTPClient(_DomainAddressMixin):
         random_length: int = 10,
         timeout: int = 15,
         proxies: Any = None,
+        mode: str = "random",
+        generate_api_url: str = "",
     ):
-        self._configure_address(domain, prefix, random_length)
+        self.mode = mode
+        self.generate_api_url = generate_api_url
+        if self.mode == "random":
+            self._configure_address(domain, prefix, random_length)
+        else:
+            self.email = ""
+            
         if not api_url:
             raise RuntimeError("缺少 DOMAIN_MAIL_API_URL")
         self.api_url = api_url.strip()
@@ -78,8 +88,20 @@ class DomainMailHTTPClient(_DomainAddressMixin):
         return f"{self.api_url}{separator}mail={encoded_mail}"
 
     def create_email(self) -> str:
-        self.email = self._build_address()
-        return self.email
+        if self.mode == "api":
+            if not self.generate_api_url:
+                raise RuntimeError("缺少 DOMAIN_MAIL_GENERATE_API_URL")
+            response = self.session.get(self.generate_api_url, timeout=self.timeout)
+            if response.status_code != 200:
+                raise RuntimeError(f"获取邮箱失败, HTTP 状态码: {response.status_code}, 内容: {response.text[:200]}")
+            data = response.json()
+            self.email = data.get("email") or data.get("mail")
+            if not self.email:
+                raise RuntimeError("API 返回结果中缺少邮箱地址")
+            return self.email
+        else:
+            self.email = self._build_address()
+            return self.email
 
     def fetch_first_email(self) -> Optional[str]:
         if not self.email:
@@ -127,6 +149,8 @@ class EmailService:
                 random_length=settings["random_length"],
                 timeout=settings["api_timeout"],
                 proxies=self.proxies,
+                mode=settings["mode"],
+                generate_api_url=settings["generate_api_url"],
             )
             address = client.create_email()
             print(f"[+] 自建域名邮箱已创建: {address}")

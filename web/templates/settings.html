@@ -53,21 +53,35 @@
             <div id="domain_config" class="mt-6 border-t border-gray-200 pt-6">
                 <h4 class="text-md font-semibold text-gray-700 mb-4">自建域名邮箱配置</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">获取邮箱模式 (DOMAIN_MAIL_MODE)</label>
+                        <select id="DOMAIN_MAIL_MODE" onchange="toggleDomainModeConfig()" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                            <option value="random" {% if config.get('DOMAIN_MAIL_MODE', 'random') == 'random' %}selected{% endif %}>本地随机生成前缀 (random)</option>
+                            <option value="api" {% if config.get('DOMAIN_MAIL_MODE') == 'api' %}selected{% endif %}>调用 API 获取随机邮箱 (api)</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-2 api-mode-only">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">获取邮箱接口 URL (DOMAIN_MAIL_GENERATE_API_URL)</label>
+                        <input type="text" id="DOMAIN_MAIL_GENERATE_API_URL" value="{{ config.get('DOMAIN_MAIL_GENERATE_API_URL', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors" placeholder="例如: http://api.example.com/api/random-mailbox?api_key=xxx">
+                    </div>
+
+                    <div class="random-mode-only">
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">接收域名 (DOMAIN_MAIL_DOMAIN)</label>
                         <input type="text" id="DOMAIN_MAIL_DOMAIN" value="{{ config.get('DOMAIN_MAIL_DOMAIN', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors" placeholder="例如: example.com">
                     </div>
-                    <div>
+                    <div class="random-mode-only">
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">邮箱前缀 (DOMAIN_MAIL_PREFIX)</label>
                         <input type="text" id="DOMAIN_MAIL_PREFIX" value="{{ config.get('DOMAIN_MAIL_PREFIX', 'grok') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
                     </div>
+                    <div class="random-mode-only">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">随机长度 (DOMAIN_MAIL_RANDOM_LENGTH)</label>
+                        <input type="number" id="DOMAIN_MAIL_RANDOM_LENGTH" value="{{ config.get('DOMAIN_MAIL_RANDOM_LENGTH', '10') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                    </div>
+                    
                     <div class="md:col-span-2">
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">拉信接口 URL (DOMAIN_MAIL_API_URL)</label>
                         <input type="text" id="DOMAIN_MAIL_API_URL" value="{{ config.get('DOMAIN_MAIL_API_URL', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors" placeholder="例如: http://api.example.com/Mail?token=xxx&mail={mail}">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">随机长度 (DOMAIN_MAIL_RANDOM_LENGTH)</label>
-                        <input type="number" id="DOMAIN_MAIL_RANDOM_LENGTH" value="{{ config.get('DOMAIN_MAIL_RANDOM_LENGTH', '10') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">超时时间(秒) (DOMAIN_MAIL_API_TIMEOUT)</label>
@@ -148,10 +162,25 @@
 
     function toggleEmailConfig() {
         document.getElementById('domain_config').classList.remove('hidden');
+        toggleDomainModeConfig();
+    }
+
+    function toggleDomainModeConfig() {
+        const mode = document.getElementById('DOMAIN_MAIL_MODE').value;
+        const apiModeOnly = document.querySelectorAll('.api-mode-only');
+        const randomModeOnly = document.querySelectorAll('.random-mode-only');
+        
+        if (mode === 'api') {
+            apiModeOnly.forEach(el => el.style.display = 'block');
+            randomModeOnly.forEach(el => el.style.display = 'none');
+        } else {
+            apiModeOnly.forEach(el => el.style.display = 'none');
+            randomModeOnly.forEach(el => el.style.display = 'block');
+        }
     }
 
     function saveEmailConfig() {
-        const keys = ['EMAIL_PROVIDER', 'DOMAIN_MAIL_DOMAIN', 'DOMAIN_MAIL_PREFIX', 'DOMAIN_MAIL_API_URL', 'DOMAIN_MAIL_RANDOM_LENGTH', 'DOMAIN_MAIL_API_TIMEOUT'];
+        const keys = ['EMAIL_PROVIDER', 'DOMAIN_MAIL_MODE', 'DOMAIN_MAIL_GENERATE_API_URL', 'DOMAIN_MAIL_DOMAIN', 'DOMAIN_MAIL_PREFIX', 'DOMAIN_MAIL_API_URL', 'DOMAIN_MAIL_RANDOM_LENGTH', 'DOMAIN_MAIL_API_TIMEOUT'];
         saveGroup(keys);
     }
     let toastTimeout;
