@@ -62,8 +62,8 @@
                     </div>
 
                     <div class="md:col-span-2 api-mode-only">
-                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">获取邮箱接口 URL (DOMAIN_MAIL_GENERATE_API_URL)</label>
-                        <input type="text" id="DOMAIN_MAIL_GENERATE_API_URL" value="{{ config.get('DOMAIN_MAIL_GENERATE_API_URL', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors" placeholder="例如: http://api.example.com/api/random-mailbox?api_key=xxx">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">API 密钥 (DOMAIN_MAIL_API_KEY)</label>
+                        <input type="text" id="DOMAIN_MAIL_API_KEY" value="{{ config.get('DOMAIN_MAIL_API_KEY', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors" placeholder="填入邮局后台生成的 API 密钥">
                     </div>
 
                     <div class="random-mode-only">
@@ -180,7 +180,7 @@
     }
 
     function saveEmailConfig() {
-        const keys = ['EMAIL_PROVIDER', 'DOMAIN_MAIL_MODE', 'DOMAIN_MAIL_GENERATE_API_URL', 'DOMAIN_MAIL_DOMAIN', 'DOMAIN_MAIL_PREFIX', 'DOMAIN_MAIL_API_URL', 'DOMAIN_MAIL_RANDOM_LENGTH', 'DOMAIN_MAIL_API_TIMEOUT'];
+        const keys = ['EMAIL_PROVIDER', 'DOMAIN_MAIL_MODE', 'DOMAIN_MAIL_API_KEY', 'DOMAIN_MAIL_DOMAIN', 'DOMAIN_MAIL_PREFIX', 'DOMAIN_MAIL_API_URL', 'DOMAIN_MAIL_RANDOM_LENGTH', 'DOMAIN_MAIL_API_TIMEOUT'];
         saveGroup(keys);
     }
     let toastTimeout;

@@ -26,7 +26,7 @@ def _domain_mail_settings() -> dict:
         "mode": str(os.getenv("DOMAIN_MAIL_MODE") or "random").strip().lower(),
         "domain": str(os.getenv("DOMAIN_MAIL_DOMAIN") or "").strip().lstrip("@"),
         "api_url": str(os.getenv("DOMAIN_MAIL_API_URL") or "").strip(),
-        "generate_api_url": str(os.getenv("DOMAIN_MAIL_GENERATE_API_URL") or "").strip(),
+        "api_key": str(os.getenv("DOMAIN_MAIL_API_KEY") or "").strip(),
         "api_timeout": int(str(os.getenv("DOMAIN_MAIL_API_TIMEOUT") or "15").strip() or "15"),
         "prefix": str(os.getenv("DOMAIN_MAIL_PREFIX") or "grok").strip() or "grok",
         "random_length": int(str(os.getenv("DOMAIN_MAIL_RANDOM_LENGTH") or "10").strip() or "10"),
@@ -59,10 +59,10 @@ class DomainMailHTTPClient(_DomainAddressMixin):
         timeout: int = 15,
         proxies: Any = None,
         mode: str = "random",
-        generate_api_url: str = "",
+        api_key: str = "",
     ):
         self.mode = mode
-        self.generate_api_url = generate_api_url
+        self.api_key = api_key
         if self.mode == "random":
             self._configure_address(domain, prefix, random_length)
         else:
@@ -89,9 +89,14 @@ class DomainMailHTTPClient(_DomainAddressMixin):
 
     def create_email(self) -> str:
         if self.mode == "api":
-            if not self.generate_api_url:
-                raise RuntimeError("缺少 DOMAIN_MAIL_GENERATE_API_URL")
-            response = self.session.get(self.generate_api_url, timeout=self.timeout)
+            if not self.api_key:
+                raise RuntimeError("缺少 DOMAIN_MAIL_API_KEY")
+            
+            # 使用 拉信接口 URL + api_key 自动拼接成完整的生成邮箱 URL
+            separator = "&" if "?" in self.api_url else "?"
+            generate_api_url = f"{self.api_url}{separator}api_key={self.api_key}"
+            
+            response = self.session.get(generate_api_url, timeout=self.timeout)
             if response.status_code != 200:
                 raise RuntimeError(f"获取邮箱失败, HTTP 状态码: {response.status_code}, 内容: {response.text[:200]}")
             data = response.json()
@@ -150,7 +155,7 @@ class EmailService:
                 timeout=settings["api_timeout"],
                 proxies=self.proxies,
                 mode=settings["mode"],
-                generate_api_url=settings["generate_api_url"],
+                api_key=settings["api_key"],
             )
             address = client.create_email()
             print(f"[+] 自建域名邮箱已创建: {address}")
