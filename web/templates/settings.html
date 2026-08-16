@@ -24,7 +24,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1.5">邮箱提供商 (EMAIL_PROVIDER)</label>
-                    <select id="EMAIL_PROVIDER" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                    <select id="EMAIL_PROVIDER" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors" onchange="toggleEmailConfig()">
                         <option value="domain" {% if config.get('EMAIL_PROVIDER', 'domain') == 'domain' %}selected{% endif %}>自建域名邮箱 (domain) - 默认首选</option>
                         <option value="gptmail" {% if config.get('EMAIL_PROVIDER') == 'gptmail' %}selected{% endif %}>GPTMail (gptmail)</option>
                         <option value="luckmail" {% if config.get('EMAIL_PROVIDER') == 'luckmail' %}selected{% endif %}>LuckMail (luckmail)</option>
@@ -38,12 +38,12 @@
                 </div>
             </div>
             
-            <div class="mt-6 border-t border-gray-200 pt-6">
+            <div id="domain_config" class="mt-6 border-t border-gray-200 pt-6">
                 <h4 class="text-md font-semibold text-gray-700 mb-4">自建域名邮箱配置 (HTTP 拉信接口模式)</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">接收域名 (DOMAIN_MAIL_DOMAIN)</label>
-                        <input type="text" id="DOMAIN_MAIL_DOMAIN" value="{{ config.get('DOMAIN_MAIL_DOMAIN', 'lahtim.io') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors" placeholder="例如: example.com">
+                        <input type="text" id="DOMAIN_MAIL_DOMAIN" value="{{ config.get('DOMAIN_MAIL_DOMAIN', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors" placeholder="例如: example.com">
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">邮箱前缀 (DOMAIN_MAIL_PREFIX)</label>
@@ -51,7 +51,7 @@
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">拉信接口 URL (DOMAIN_MAIL_API_URL)</label>
-                        <input type="text" id="DOMAIN_MAIL_API_URL" value="{{ config.get('DOMAIN_MAIL_API_URL', 'http://92.5.82.166:2099/Mail?token=2088&mail={mail}') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors" placeholder="例如: http://89.168.116.152:2099/Mail?token=xxx&mail={mail}">
+                        <input type="text" id="DOMAIN_MAIL_API_URL" value="{{ config.get('DOMAIN_MAIL_API_URL', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors" placeholder="例如: http://api.example.com/Mail?token=xxx&mail={mail}">
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">随机长度 (DOMAIN_MAIL_RANDOM_LENGTH)</label>
@@ -63,9 +63,42 @@
                     </div>
                 </div>
             </div>
+
+            <div id="luckmail_config" class="mt-6 border-t border-gray-200 pt-6 hidden">
+                <h4 class="text-md font-semibold text-gray-700 mb-4">LuckMail 配置</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">API Key (LUCKMAIL_API_KEY)</label>
+                        <input type="text" id="LUCKMAIL_API_KEY" value="{{ config.get('LUCKMAIL_API_KEY', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">API Secret (LUCKMAIL_API_SECRET)</label>
+                        <input type="password" id="LUCKMAIL_API_SECRET" value="{{ config.get('LUCKMAIL_API_SECRET', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                    </div>
+                </div>
+            </div>
+
+            <div id="mailnest_config" class="mt-6 border-t border-gray-200 pt-6 hidden">
+                <h4 class="text-md font-semibold text-gray-700 mb-4">MailNest 配置</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">API Key (MAILNEST_API_KEY)</label>
+                        <input type="text" id="MAILNEST_API_KEY" value="{{ config.get('MAILNEST_API_KEY', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Project Code (MAILNEST_PROJECT_CODE)</label>
+                        <input type="text" id="MAILNEST_PROJECT_CODE" value="{{ config.get('MAILNEST_PROJECT_CODE', 'x-ai001') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                    </div>
+                </div>
+            </div>
+            
+            <div id="gptmail_config" class="mt-6 border-t border-gray-200 pt-6 hidden">
+                <h4 class="text-md font-semibold text-gray-700 mb-4">GPTMail</h4>
+                <p class="text-sm text-gray-600">GPTMail 不需要额外配置，直接可用。</p>
+            </div>
         </div>
         <div class="px-6 py-3 border-t border-gray-100 bg-gray-50 flex justify-end">
-            <button onclick="saveGroup(['EMAIL_PROVIDER', 'GROK_PROXY', 'DOMAIN_MAIL_DOMAIN', 'DOMAIN_MAIL_PREFIX', 'DOMAIN_MAIL_API_URL', 'DOMAIN_MAIL_RANDOM_LENGTH', 'DOMAIN_MAIL_API_TIMEOUT'])" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-5 rounded-md transition-colors shadow-sm flex items-center">
+            <button onclick="saveEmailConfig()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-5 rounded-md transition-colors shadow-sm flex items-center">
                 <i class="fa-solid fa-save mr-2"></i> 保存配置
             </button>
         </div>
@@ -110,25 +143,17 @@
         <div class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">验证码服务 (GROK_CAPTCHA_SERVICE)</label>
-                    <input type="text" id="GROK_CAPTCHA_SERVICE" value="{{ config.get('GROK_CAPTCHA_SERVICE', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">2Captcha 密钥 (TWOCAPTCHA_KEY)</label>
+                    <input type="text" id="TWOCAPTCHA_KEY" value="{{ config.get('TWOCAPTCHA_KEY', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors" placeholder="填入 2Captcha 的 API Key">
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">2Captcha 密钥 (YESCAPTCHA_CLIENT_KEY)</label>
-                    <input type="text" id="YESCAPTCHA_CLIENT_KEY" value="{{ config.get('YESCAPTCHA_CLIENT_KEY', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">EzCaptcha 密钥 (EZCAPTCHA_CLIENT_KEY)</label>
-                    <input type="text" id="EZCAPTCHA_CLIENT_KEY" value="{{ config.get('EZCAPTCHA_CLIENT_KEY', '') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">并发数 (GROK_THREADS)</label>
-                    <input type="number" id="GROK_THREADS" value="{{ config.get('GROK_THREADS', '1') }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">并发数 (THREADS)</label>
+                    <input type="number" id="THREADS" value="{{ config.get('THREADS', config.get('GROK_THREADS', '1')) }}" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 px-3 py-2 transition-colors">
                 </div>
             </div>
         </div>
         <div class="px-6 py-3 border-t border-gray-100 bg-gray-50 flex justify-end">
-            <button onclick="saveGroup(['GROK_CAPTCHA_SERVICE', 'YESCAPTCHA_CLIENT_KEY', 'EZCAPTCHA_CLIENT_KEY', 'GROK_THREADS'])" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-5 rounded-md transition-colors shadow-sm flex items-center">
+            <button onclick="saveGroup(['TWOCAPTCHA_KEY', 'THREADS'])" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-5 rounded-md transition-colors shadow-sm flex items-center">
                 <i class="fa-solid fa-save mr-2"></i> 保存配置
             </button>
         </div>
@@ -137,6 +162,40 @@
 </div>
 
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleEmailConfig();
+    });
+
+    function toggleEmailConfig() {
+        const provider = document.getElementById('EMAIL_PROVIDER').value;
+        const configs = ['domain_config', 'luckmail_config', 'mailnest_config', 'gptmail_config'];
+        
+        configs.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                if (id === provider + '_config') {
+                    el.classList.remove('hidden');
+                } else {
+                    el.classList.add('hidden');
+                }
+            }
+        });
+    }
+
+    function saveEmailConfig() {
+        const keys = ['EMAIL_PROVIDER', 'GROK_PROXY'];
+        const provider = document.getElementById('EMAIL_PROVIDER').value;
+        
+        if (provider === 'domain') {
+            keys.push('DOMAIN_MAIL_DOMAIN', 'DOMAIN_MAIL_PREFIX', 'DOMAIN_MAIL_API_URL', 'DOMAIN_MAIL_RANDOM_LENGTH', 'DOMAIN_MAIL_API_TIMEOUT');
+        } else if (provider === 'luckmail') {
+            keys.push('LUCKMAIL_API_KEY', 'LUCKMAIL_API_SECRET');
+        } else if (provider === 'mailnest') {
+            keys.push('MAILNEST_API_KEY', 'MAILNEST_PROJECT_CODE');
+        }
+        
+        saveGroup(keys);
+    }
     let toastTimeout;
     function showToast() {
         const toast = document.getElementById('toast');
