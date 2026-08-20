@@ -183,6 +183,37 @@ async def get_pending_accounts():
                     })
     return {"accounts": accounts}
 
+@app.get("/api/accounts/all")
+async def get_all_accounts():
+    accounts = []
+    seen_emails = set()
+    
+    # 账号转换后会被归档到 accounts_done.txt
+    files_to_check = [
+        BASE_DIR / "keys" / "accounts.txt",
+        BASE_DIR / "keys" / "accounts_done.txt"
+    ]
+    
+    for file_path in files_to_check:
+        if file_path.exists():
+            with open(file_path, "r", encoding="utf-8-sig") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    parts = line.split(":")
+                    if len(parts) >= 3:
+                        email = parts[0].strip()
+                        if email not in seen_emails:
+                            seen_emails.add(email)
+                            accounts.append({
+                                "email": email,
+                                "password": parts[1].strip(),
+                                "sso_preview": parts[2].strip()[:20] + "...",
+                                "sso_full": parts[2].strip()
+                            })
+    return {"accounts": accounts}
+
 class ConvertSingleRequest(BaseModel):
     email: str
 
