@@ -178,7 +178,8 @@ async def get_pending_accounts():
                     accounts.append({
                         "email": parts[0].strip(),
                         "password": parts[1].strip(),
-                        "sso_preview": parts[2].strip()[:20] + "..."
+                        "sso_preview": parts[2].strip()[:20] + "...",
+                        "sso_full": parts[2].strip()
                     })
     return {"accounts": accounts}
 

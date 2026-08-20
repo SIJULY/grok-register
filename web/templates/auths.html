@@ -368,7 +368,7 @@
         tbody.innerHTML = accountsData.map(acc => `
             <tr class="hover:bg-gray-50 transition-colors">
                 <td class="py-3 px-6 text-center">
-                    <input type="checkbox" value="${acc.email}----${acc.password}" class="file-checkbox w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500">
+                    <input type="checkbox" value="${acc.email}----${acc.password}----${acc.sso_full}" class="file-checkbox w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500">
                 </td>
                 <td class="py-3 px-6 font-medium text-gray-800">${acc.email}</td>
                 <td class="py-3 px-6 text-gray-500">${acc.password}</td>
