@@ -20,6 +20,9 @@
         <li role="presentation">
             <button class="inline-block p-4 border-b-2 rounded-t-lg hover:text-blue-600 hover:border-blue-300" id="all-tab" data-tabs-target="#all" type="button" role="tab" onclick="switchTab('all')">所有 JSON 存档 (All JSONs)</button>
         </li>
+        <li role="presentation">
+            <button class="inline-block p-4 border-b-2 rounded-t-lg hover:text-blue-600 hover:border-blue-300 border-transparent" id="accounts-tab" data-tabs-target="#accounts" type="button" role="tab" onclick="switchTab('accounts')">所有账号存档 (Accounts)</button>
+        </li>
     </ul>
 </div>
 
@@ -87,7 +90,7 @@
         currentTab = tabId;
         
         // 更新 Tab 样式
-        const tabs = ['unuploaded', 'uploaded', 'all'];
+        const tabs = ['unuploaded', 'uploaded', 'all', 'accounts'];
         tabs.forEach(t => {
             const btn = document.getElementById(`${t}-tab`);
             if (t === tabId) {
@@ -105,6 +108,8 @@
         // 加载数据
         if (tabId === 'pending') {
             fetchPendingAccounts();
+        } else if (tabId === 'accounts') {
+            fetchAccounts();
         } else {
             fetchAuthsFiles();
         }
@@ -120,6 +125,30 @@
         let theadHtml = '';
 
         const selectAllCheckbox = `<input type="checkbox" id="selectAll" onclick="toggleSelectAll()" class="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500">`;
+
+        if (currentTab === 'accounts') {
+            title = '<i class="fa-solid fa-users mr-2 text-purple-500"></i> 所有账号存档';
+            buttonsHtml = `
+                <button onclick="downloadSelectedAccounts()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors flex items-center shadow-sm mr-2">
+                    <i class="fa-solid fa-download mr-2"></i> 下载选中
+                </button>
+                <button onclick="fetchAccounts()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded transition-colors flex items-center shadow-sm">
+                    <i class="fa-solid fa-rotate mr-2"></i> 刷新
+                </button>
+            `;
+            theadHtml = `
+                <tr class="bg-gray-50 border-b border-gray-200 text-sm font-medium text-gray-700">
+                    <th class="py-3 px-6 w-10 text-center">${selectAllCheckbox}</th>
+                    <th class="py-3 px-6">账号 (Email)</th>
+                    <th class="py-3 px-6">密码 (Password)</th>
+                    <th class="py-3 px-6">SSO 预览</th>
+                </tr>
+            `;
+            titleEl.innerHTML = title;
+            actionsEl.innerHTML = buttonsHtml;
+            theadEl.innerHTML = theadHtml;
+            return;
+        }
 
         if (currentTab === 'unuploaded') {
             title = '<i class="fa-solid fa-cloud-arrow-down mr-2 text-gray-500"></i> 未上传的 JSON 凭证';
@@ -310,6 +339,65 @@
 
     function closeModal() {
         document.getElementById('previewModal').classList.add('hidden');
+    }
+
+    let accountsData = [];
+
+    async function fetchAccounts() {
+        const tbody = document.getElementById('fileList');
+        tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-gray-500"><i class="fa-solid fa-spinner fa-spin mr-2"></i>正在加载...</td></tr>`;
+        
+        try {
+            const response = await fetch('/api/accounts/pending');
+            if (!response.ok) throw new Error('网络请求失败');
+            const data = await response.json();
+            accountsData = data.accounts;
+            renderAccounts();
+        } catch (error) {
+            tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-red-500"><i class="fa-solid fa-circle-exclamation mr-2"></i>加载失败: ${error.message}</td></tr>`;
+        }
+    }
+
+    function renderAccounts() {
+        const tbody = document.getElementById('fileList');
+        if (accountsData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-gray-500">没有账号存档。</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = accountsData.map(acc => `
+            <tr class="hover:bg-gray-50 transition-colors">
+                <td class="py-3 px-6 text-center">
+                    <input type="checkbox" value="${acc.email}----${acc.password}" class="file-checkbox w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500">
+                </td>
+                <td class="py-3 px-6 font-medium text-gray-800">${acc.email}</td>
+                <td class="py-3 px-6 text-gray-500">${acc.password}</td>
+                <td class="py-3 px-6 text-gray-500">${acc.sso_preview}</td>
+            </tr>
+        `).join('');
+    }
+
+    function downloadSelectedAccounts() {
+        const checkboxes = document.querySelectorAll('.file-checkbox:checked');
+        if (checkboxes.length === 0) {
+            alert('请先选择要下载的账号');
+            return;
+        }
+        
+        let content = '';
+        checkboxes.forEach(cb => {
+            content += cb.value + '\\n';
+        });
+        
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `accounts_archive.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 
 </script>
